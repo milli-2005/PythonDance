@@ -21,6 +21,19 @@
     <form method="post">
         {% csrf_token %}
 
+        <!-- ДОБАВИТЬ это поле в форму: -->
+<div class="form-group">
+    <label class="form-label">Имя пользователя (username):</label>
+    {{ form.username }}
+    {% if form.username.errors %}
+        <div style="color: var(--danger); font-size: 0.9rem;">
+            {% for error in form.username.errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
         <div class="form-group">
             <label class="form-label">Имя:</label>
             {{ form.first_name }}

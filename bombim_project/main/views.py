@@ -63,21 +63,21 @@ def signup_view(request):
             return redirect('home')
     else:
         form = CustomUserCreationForm()
+
     return render(request, 'main/signup.html', {'form': form})
 
 
 # Вход
 def login_view(request):
     if request.method == 'POST':
-        email = request.POST['email']
+        username = request.POST['username']  # Теперь получаем username
         password = request.POST['password']
-        user = authenticate(request, username=email, password=password)
+        user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
             return redirect('home')
         else:
-            # Добавим сообщение об ошибке
-            return render(request, 'main/login.html', {'error': 'Неверный email или пароль'})
+            return render(request, 'main/login.html', {'error': 'Неверное имя пользователя или пароль'})
     return render(request, 'main/login.html')
 
 

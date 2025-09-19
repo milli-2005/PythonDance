@@ -15,8 +15,8 @@
     <form method="post">
         {% csrf_token %}
         <div class="form-group">
-            <label class="form-label">Email:</label>
-            <input type="email" name="email" class="form-control" required>
+            <label class="form-label">Имя пользователя:</label>
+            <input type="text" name="username" class="form-control" required>  <!-- МЕНЯЕМ email на username -->
         </div>
         
         <div class="form-group">
