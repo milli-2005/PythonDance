@@ -18,6 +18,11 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
 
+    # ДОБАВЬ ЭТИ 3 СТРОЧКИ в конец класса (перед def __str__):
+    username = None  # Отключаем стандартное поле username
+    USERNAME_FIELD = 'email'  # Говорим Django использовать email для входа
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone']  # Обязательные поля
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 

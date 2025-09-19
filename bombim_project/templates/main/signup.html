@@ -6,42 +6,82 @@
 <div class="auth-form">
     <h2 class="text-center">Регистрация</h2>
     
+    {% if form.errors %}
+    <div class="alert alert-error">
+        <i class="fas fa-exclamation-circle"></i>
+        Пожалуйста, исправьте ошибки ниже.
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+                <br>{{ error }}
+            {% endfor %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
-        
+
         <div class="form-group">
             <label class="form-label">Имя:</label>
-            <input type="text" name="first_name" class="form-control" required>
+            {{ form.first_name }}
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Фамилия:</label>
-            <input type="text" name="last_name" class="form-control" required>
+            {{ form.last_name }}
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Email:</label>
-            <input type="email" name="email" class="form-control" required>
+            {{ form.email }}
+            {% if form.email.errors %}
+                <div style="color: var(--danger); font-size: 0.9rem;">
+                    {% for error in form.email.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Телефон:</label>
-            <input type="tel" name="phone" class="form-control" required>
+            {{ form.phone }}
+            {% if form.phone.errors %}
+                <div style="color: var(--danger); font-size: 0.9rem;">
+                    {% for error in form.phone.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Дата рождения:</label>
-            <input type="date" name="birth_date" class="form-control" required>
+            {{ form.birth_date }}
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Пароль:</label>
-            <input type="password" name="password1" class="form-control" required>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+                <div style="color: var(--danger); font-size: 0.9rem;">
+                    {% for error in form.password1.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">Подтверждение пароля:</label>
-            <input type="password" name="password2" class="form-control" required>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+                <div style="color: var(--danger); font-size: 0.9rem;">
+                    {% for error in form.password2.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
         
         <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>

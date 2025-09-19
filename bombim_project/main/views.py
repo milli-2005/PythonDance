@@ -54,9 +54,11 @@ def schedule_view(request):
 # Регистрация
 def signup_view(request):
     if request.method == 'POST':
+        # Создаем форму с данными из POST-запроса
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Автоматически входим после регистрации
             login(request, user)
             return redirect('home')
     else:
@@ -83,6 +85,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('home')
+
 
 # Личный кабинет клиента
 @login_required
