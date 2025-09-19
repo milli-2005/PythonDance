@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from .models import Schedule, Booking, DanceStyle, Trainer
@@ -73,8 +73,16 @@ def login_view(request):
         if user is not None:
             login(request, user)
             return redirect('home')
+        else:
+            # Добавим сообщение об ошибке
+            return render(request, 'main/login.html', {'error': 'Неверный email или пароль'})
     return render(request, 'main/login.html')
 
+
+# Выход
+def logout_view(request):
+    logout(request)
+    return redirect('home')
 
 # Личный кабинет клиента
 @login_required

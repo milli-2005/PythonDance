@@ -1,0 +1,54 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Регистрация - Bombim{% endblock %}
+
+{% block content %}
+<div class="auth-form">
+    <h2 class="text-center">Регистрация</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label class="form-label">Имя:</label>
+            <input type="text" name="first_name" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Фамилия:</label>
+            <input type="text" name="last_name" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Email:</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Телефон:</label>
+            <input type="tel" name="phone" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Дата рождения:</label>
+            <input type="date" name="birth_date" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Пароль:</label>
+            <input type="password" name="password1" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Подтверждение пароля:</label>
+            <input type="password" name="password2" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+    </form>
+    
+    <p class="text-center mt-3">
+        Уже есть аккаунт? <a href="{% url 'login' %}" style="color: var(--accent-primary);">Войти</a>
+    </p>
+</div>
+{% endblock %}
