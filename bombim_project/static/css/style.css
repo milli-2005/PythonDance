@@ -79,3 +79,66 @@
     border-color: var(--accent-secondary);
     color: var(--accent-secondary);
 }
+
+/* Стили для карточек */
+.style-card, .trainer-card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.style-card:hover, .trainer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+.style-image, .trainer-image {
+    width: 50%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.style-content, .trainer-content {
+    padding: 1.5rem;
+}
+
+/* Сетка */
+.grid {
+    display: grid;
+    gap: 2rem;
+}
+
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+
+/* Таблицы */
+.schedule-table {
+    margin-top: 1rem;
+}
+
+.schedule-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr auto;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--bg-secondary);
+    align-items: center;
+}
+
+.schedule-item:last-child {
+    border-bottom: none;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .schedule-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
+}

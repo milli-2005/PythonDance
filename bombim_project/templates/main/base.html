@@ -281,7 +281,74 @@
             .container {
                 padding: 0 1rem;
             }
+            /* Стили для фотографий преподавателей */
+.trainer-image {
+    width: 100%;
+    height: 300px; /* Уменьшаем высоту */
+    object-fit: cover;
+    border-radius: 10px 10px 0 0;
+}
+
+/* Карточка преподавателя */
+.trainer-card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: center;
+}
+
+.trainer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+.trainer-content {
+    padding: 1.5rem;
+}
+
+/* Стили для направлений */
+.style-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 10px 10px 0 0;
+}
+
+.style-card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.style-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+.style-content {
+    padding: 1.5rem;
+}
+
+/* Сетка для нормального отображения */
+.grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .trainer-image {
+        height: 250px;
+    }
+
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
         }
+
     </style>
 </head>
 <body>

@@ -15,23 +15,30 @@
             <img src="{{ trainer.photo.url }}" alt="{{ trainer.user.get_full_name }}" class="trainer-image">
             <div class="trainer-content">
                 <h3>{{ trainer.user.get_full_name }}</h3>
+
+                <!-- Стили преподавания -->
                 <div style="margin: 1rem 0;">
-                    <span style="background: var(--accent-primary); color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.9rem;">
-                        {% for style in trainer.styles.all %}
-                            {{ style.name }}{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
+                    {% for style in trainer.styles.all %}
+                    <span style="background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+                                color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.9rem; margin: 0.2rem; display: inline-block;">
+                        {{ style.name }}
                     </span>
+                    {% endfor %}
                 </div>
-                <p style="color: var(--text-secondary);">{{ trainer.bio|truncatewords:30 }}</p>
+
+                <p style="color: var(--text-secondary); line-height: 1.6; margin: 1rem 0;">
+                    {{ trainer.bio|truncatewords:20 }}
+                </p>
+
                 <a href="{% url 'schedule' %}?trainer={{ trainer.id }}" class="btn btn-outline">
-                    Расписание занятий
+                    <i class="fas fa-calendar"></i> Расписание
                 </a>
             </div>
         </div>
         {% empty %}
         <div class="card text-center">
             <div class="trainer-content">
-                <i class="fas fa-users fa-3x" style="color: var(--accent-primary);"></i>
+                <i class="fas fa-users fa-3x" style="color: var(--accent-primary); margin-bottom: 1rem;"></i>
                 <h3>Преподаватели пока не добавлены</h3>
                 <p style="color: var(--text-secondary);">Скоро здесь появятся наши хореографы</p>
             </div>
