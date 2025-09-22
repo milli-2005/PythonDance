@@ -1,10 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'main/base.html' %}
 
-</body>
-</html>
+{% block title %}Расписание - Bombim{% endblock %}
+
+{% block content %}
+<section class="mt-5">
+    <h1 class="text-center">Расписание занятий</h1>
+    
+    <!-- Фильтры -->
+    <div class="card">
+        <div class="style-content">
+            <h3>Фильтры</h3>
+            <form method="get" class="filter-form">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="form-label">Направление:</label>
+                        <select name="style" class="form-control">
+                            <option value="">Все направления</option>
+                            {% for style in styles %}
+                                <option value="{{ style.id }}" {% if request.GET.style == style.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ style.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Преподаватель:</label>
+                        <select name="trainer" class="form-control">
+                            <option value="">Все преподаватели</option>
+                            {% for trainer in trainers %}
+                                <option value="{{ trainer.id }}" {% if request.GET.trainer == trainer.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ trainer.user.get_full_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                    <a href="{% url 'schedule' %}" class="btn btn-outline">Сбросить</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Расписание -->
+    <div class="card mt-4">
+        <div class="style-content">
+            <h3>Занятия на неделю</h3>
+            
+            {% if schedules %}
+            <div class="schedule-table">
+                {% for schedule in schedules %}
+                <div class="schedule-item">
+                    <div class="schedule-day">
+                        <strong>{{ schedule.get_day_of_week_display }}</strong>
+                    </div>
+                    <div class="schedule-time">
+                        {{ schedule.start_time }} - {{ schedule.end_time }}
+                    </div>
+                    <div class="schedule-style">
+                        {{ schedule.dance_style.name }}
+                    </div>
+                    <div class="schedule-trainer">
+                        {{ schedule.trainer.user.get_full_name }}
+                    </div>
+                    <div class="schedule-action">
+                        {% if user.is_authenticated and user.role == 'client' %}
+                            {% if schedule.id in user_bookings %}
+                                <button class="btn btn-outline" disabled>Вы записаны</button>
+                            {% else %}
+                                <button class="btn btn-primary" onclick="bookClass({{ schedule.id }})">
+                                    Записаться
+                                </button>
+                            {% endif %}
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-primary">Записаться</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center" style="padding: 2rem;">
+                <i class="fas fa-calendar-times fa-3x" style="color: var(--accent-secondary);"></i>
+                <h4>Занятий не найдено</h4>
+                <p style="color: var(--text-secondary);">Попробуйте изменить параметры фильтрации</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<style>
+.schedule-table {
+    margin-top: 1rem;
+}
+
+.schedule-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr auto;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--bg-secondary);
+    align-items: center;
+}
+
+.schedule-item:last-child {
+    border-bottom: none;
+}
+
+.filter-form {
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .schedule-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-form > div {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+
+<script>
+function bookClass(scheduleId) {
+    if (confirm('Записаться на это занятие?')) {
+        // Здесь будет AJAX запрос для записи
+        alert('Запись успешно оформлена!');
+        location.reload();
+    }
+}
+</script>
+{% endblock %}

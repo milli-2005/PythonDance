@@ -1,10 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'main/base.html' %}
 
-</body>
-</html>
+{% block title %}Преподаватели - Bombim{% endblock %}
+
+{% block content %}
+<section class="mt-5">
+    <h1 class="text-center">Наши хореографы</h1>
+    <p class="text-center" style="color: var(--text-secondary); margin-bottom: 3rem;">
+        Профессиональные преподаватели с многолетним опытом
+    </p>
+
+    <div class="grid grid-3">
+        {% for trainer in trainers %}
+        <div class="card trainer-card">
+            <img src="{{ trainer.photo.url }}" alt="{{ trainer.user.get_full_name }}" class="trainer-image">
+            <div class="trainer-content">
+                <h3>{{ trainer.user.get_full_name }}</h3>
+                <div style="margin: 1rem 0;">
+                    <span style="background: var(--accent-primary); color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.9rem;">
+                        {% for style in trainer.styles.all %}
+                            {{ style.name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </span>
+                </div>
+                <p style="color: var(--text-secondary);">{{ trainer.bio|truncatewords:30 }}</p>
+                <a href="{% url 'schedule' %}?trainer={{ trainer.id }}" class="btn btn-outline">
+                    Расписание занятий
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card text-center">
+            <div class="trainer-content">
+                <i class="fas fa-users fa-3x" style="color: var(--accent-primary);"></i>
+                <h3>Преподаватели пока не добавлены</h3>
+                <p style="color: var(--text-secondary);">Скоро здесь появятся наши хореографы</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

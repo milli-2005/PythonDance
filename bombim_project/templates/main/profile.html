@@ -1,10 +1,186 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'main/base.html' %}
 
-</body>
-</html>
+{% block title %}Личный кабинет - Bombim{% endblock %}
+
+{% block content %}
+<section class="mt-5">
+    <h1 class="text-center">Личный кабинет</h1>
+    <p class="text-center" style="color: var(--text-secondary); margin-bottom: 2rem;">
+        Добро пожаловать, {{ user.first_name }}!
+    </p>
+
+    <!-- Навигация по вкладкам -->
+    <div class="card">
+        <div style="display: flex; border-bottom: 1px solid var(--bg-secondary);">
+            <a href="?tab=bookings" class="tab-link {% if tab == 'bookings' %}active{% endif %}">
+                <i class="fas fa-calendar-check"></i> Мои записи
+            </a>
+            <a href="?tab=history" class="tab-link {% if tab == 'history' %}active{% endif %}">
+                <i class="fas fa-history"></i> История посещений
+            </a>
+            <a href="?tab=settings" class="tab-link {% if tab == 'settings' %}active{% endif %}">
+                <i class="fas fa-cog"></i> Настройки
+            </a>
+        </div>
+
+        <div class="tab-content">
+            <!-- Активные записи -->
+            {% if tab == 'bookings' %}
+            <div class="mt-3">
+                <h3>Предстоящие занятия</h3>
+                {% if active_bookings %}
+                <div class="schedule-table">
+                    {% for booking in active_bookings %}
+                    <div class="schedule-item">
+                        <div class="schedule-day">
+                            <strong>{{ booking.schedule.get_day_of_week_display }}</strong>
+                        </div>
+                        <div class="schedule-time">
+                            {{ booking.schedule.start_time }} - {{ booking.schedule.end_time }}
+                        </div>
+                        <div class="schedule-style">
+                            {{ booking.schedule.dance_style.name }}
+                        </div>
+                        <div class="schedule-trainer">
+                            {{ booking.schedule.trainer.user.get_full_name }}
+                        </div>
+                        <div class="schedule-action">
+                            <button class="btn btn-outline" onclick="cancelBooking({{ booking.id }})">
+                                Отменить
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center" style="padding: 2rem;">
+                    <i class="fas fa-calendar-plus fa-3x" style="color: var(--accent-primary);"></i>
+                    <h4>Нет активных записей</h4>
+                    <p style="color: var(--text-secondary);">Запишитесь на занятие в расписании</p>
+                    <a href="{% url 'schedule' %}" class="btn btn-primary">Перейти к расписанию</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- История посещений -->
+            {% elif tab == 'history' %}
+            <div class="mt-3">
+                <h3>История занятий</h3>
+                {% if history_bookings %}
+                <div class="schedule-table">
+                    {% for booking in history_bookings %}
+                    <div class="schedule-item">
+                        <div>{{ booking.schedule.get_day_of_week_display }}</div>
+                        <div>{{ booking.schedule.start_time }}</div>
+                        <div>{{ booking.schedule.dance_style.name }}</div>
+                        <div>{{ booking.schedule.trainer.user.get_full_name }}</div>
+                        <div>
+                            <span class="status-badge {% if booking.status == 'attended' %}success{% elif booking.status == 'missed' %}error{% else %}warning{% endif %}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center" style="padding: 2rem;">
+                    <i class="fas fa-clipboard-list fa-3x" style="color: var(--accent-secondary);"></i>
+                    <h4>История пуста</h4>
+                    <p style="color: var(--text-secondary);">Здесь будут отображаться завершенные занятия</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Настройки -->
+            {% elif tab == 'settings' %}
+            <div class="mt-3">
+                <h3>Настройки профиля</h3>
+                <form class="profile-form">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Имя:</label>
+                            <input type="text" class="form-control" value="{{ user.first_name }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Фамилия:</label>
+                            <input type="text" class="form-control" value="{{ user.last_name }}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email:</label>
+                        <input type="email" class="form-control" value="{{ user.email }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Телефон:</label>
+                        <input type="tel" class="form-control" value="{{ user.phone }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Дата рождения:</label>
+                        <input type="date" class="form-control" value="{{ user.birth_date|date:'Y-m-d' }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<style>
+.tab-link {
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-link:hover {
+    color: var(--accent-primary);
+}
+
+.tab-link.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.tab-content {
+    padding: 1.5rem;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.9rem;
+}
+
+.status-badge.success {
+    background: rgba(0, 204, 153, 0.2);
+    color: var(--success);
+}
+
+.status-badge.error {
+    background: rgba(255, 77, 77, 0.2);
+    color: var(--danger);
+}
+
+.status-badge.warning {
+    background: rgba(255, 204, 0, 0.2);
+    color: var(--warning);
+}
+
+.profile-form {
+    max-width: 500px;
+}
+</style>
+
+<script>
+function cancelBooking(bookingId) {
+    if (confirm('Вы уверены, что хотите отменить запись?')) {
+        // Здесь будет AJAX запрос для отмены
+        alert('Запись отменена');
+        location.reload();
+    }
+}
+</script>
+{% endblock %}
