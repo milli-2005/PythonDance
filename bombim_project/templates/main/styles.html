@@ -3,32 +3,131 @@
 {% block title %}Направления - Bombim{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="text-center mb-5">Наши направления</h1>
-    
-    <div class="row">
+<section class="mt-5">
+    <h1 class="text-center">Наши направления</h1>
+    <p class="text-center" style="color: var(--text-secondary); margin-bottom: 3rem;">
+        Выберите стиль, который вам по душе
+    </p>
+
+    <div class="grid grid-3">
         {% for style in styles %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <img src="{{ style.image.url }}" class="card-img-top" alt="{{ style.name }}">
-                <div class="card-body">
-                    <h5 class="card-title">{{ style.name }}</h5>
-                    <p class="card-text">{{ style.description|truncatewords:30 }}</p>
+        <div class="style-card">
+            <div class="style-image-container">
+                {% if style.image %}
+                <img src="{{ style.image.url }}" alt="{{ style.name }}" class="style-image">
+                {% else %}
+                <div class="style-image-placeholder">
+                    <i class="fas fa-music fa-3x"></i>
                 </div>
-                <div class="card-footer bg-transparent">
-                    <a href="{% url 'schedule' %}?style={{ style.id }}" class="btn btn-primary w-100">
-                        Посмотреть расписание
-                    </a>
-                </div>
+                {% endif %}
+            </div>
+            <div class="style-content">
+                <h3>{{ style.name }}</h3>
+                <p class="style-description">{{ style.description }}</p>
+                <a href="{% url 'schedule' %}?style={{ style.id }}" class="btn btn-primary">
+                    <i class="fas fa-calendar-alt"></i> Посмотреть расписание
+                </a>
             </div>
         </div>
         {% empty %}
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                Направления пока не добавлены
+        <div class="style-card empty-card">
+            <div class="style-content text-center">
+                <i class="fas fa-music fa-4x" style="color: var(--accent-secondary); margin-bottom: 1rem;"></i>
+                <h3>Направления пока не добавлены</h3>
+                <p style="color: var(--text-secondary);">Скоро здесь появятся новые танцевальные стили</p>
             </div>
         </div>
         {% endfor %}
     </div>
-</div>
+</section>
+
+<style>
+.style-card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.style-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+.style-image-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.style-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.style-card:hover .style-image {
+    transform: scale(1.05);
+}
+
+.style-image-placeholder {
+    height: 200px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-primary);
+}
+
+.style-content {
+    padding: 1.5rem;
+}
+
+.style-content h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.style-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    min-height: 60px;
+}
+
+.empty-card {
+    grid-column: 1 / -1;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 0 auto;
+    margin-bottom: 50px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .grid-3 {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .style-content {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .style-image {
+        height: 150px;
+    }
+}
+</style>
 {% endblock %}

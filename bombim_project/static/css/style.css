@@ -103,6 +103,10 @@
     padding: 1.5rem;
 }
 
+.card-img-top{
+    max-width: 1px;
+    }
+
 /* Сетка */
 .grid {
     display: grid;
@@ -142,3 +146,292 @@
         grid-template-columns: 1fr;
     }
 }
+
+<!--{% extends 'main/base.html' %}-->
+
+<!--{% block title %}Направления - Bombim{% endblock %}-->
+
+<!--{% block content %}-->
+<!--<section class="mt-5">-->
+<!--    <h1 class="text-center">Наши направления</h1>-->
+<!--    <p class="text-center" style="color: var(&#45;&#45;text-secondary); margin-bottom: 3rem;">-->
+<!--        Погрузитесь в мир танца - выберите свой стиль-->
+<!--    </p>-->
+
+<!--    <div class="styles-grid">-->
+<!--        {% for style in styles %}-->
+<!--        <div class="style-card" style="&#45;&#45;card-color: {{ forloop.counter|add:2 }};">-->
+<!--            <div class="style-card-inner">-->
+<!--                <div class="style-card-front">-->
+<!--                    <div class="style-icon">-->
+<!--                        <i class="fas fa-{{ style.icon|default:'music' }}"></i>-->
+<!--                    </div>-->
+<!--                    <h3>{{ style.name }}</h3>-->
+<!--                    <div class="style-gradient"></div>-->
+<!--                </div>-->
+<!--                <div class="style-card-back">-->
+<!--                    <h3>{{ style.name }}</h3>-->
+<!--                    <p class="style-description">{{ style.description }}</p>-->
+<!--                    <div class="style-stats">-->
+<!--                        <span class="stat">-->
+<!--                            <i class="fas fa-users"></i>-->
+<!--                            {% cycle '5-15' '8-12' '6-10' '10-20' '4-8' %} человек-->
+<!--                        </span>-->
+<!--                        <span class="stat">-->
+<!--                            <i class="fas fa-clock"></i>-->
+<!--                            {% cycle '1.5ч' '2ч' '1ч' '1.5ч' '2ч' %}-->
+<!--                        </span>-->
+<!--                    </div>-->
+<!--                    <a href="{% url 'schedule' %}?style={{ style.id }}" class="btn-style">-->
+<!--                        <i class="fas fa-calendar-alt"></i>-->
+<!--                        Записаться-->
+<!--                    </a>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        {% empty %}-->
+<!--        <div class="empty-styles">-->
+<!--            <div class="empty-icon">-->
+<!--                <i class="fas fa-compass fa-4x"></i>-->
+<!--            </div>-->
+<!--            <h3>Исследуем новые направления</h3>-->
+<!--            <p>Скоро здесь появятся уникальные танцевальные стили</p>-->
+<!--        </div>-->
+<!--        {% endfor %}-->
+<!--    </div>-->
+<!--</section>-->
+
+<!--<style>-->
+<!--.styles-grid {-->
+<!--    display: grid;-->
+<!--    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));-->
+<!--    gap: 2rem;-->
+<!--    max-width: 1400px;-->
+<!--    margin: 0 auto;-->
+<!--    padding: 0 2rem;-->
+<!--}-->
+
+<!--/* Анимированная карточка */-->
+<!--.style-card {-->
+<!--    height: 300px;-->
+<!--    perspective: 1000px;-->
+<!--}-->
+
+<!--.style-card-inner {-->
+<!--    position: relative;-->
+<!--    width: 100%;-->
+<!--    height: 100%;-->
+<!--    transition: transform 0.8s;-->
+<!--    transform-style: preserve-3d;-->
+<!--    border-radius: 20px;-->
+<!--    cursor: pointer;-->
+<!--}-->
+
+<!--.style-card:hover .style-card-inner {-->
+<!--    transform: rotateY(180deg);-->
+<!--}-->
+
+<!--.style-card-front,-->
+<!--.style-card-back {-->
+<!--    position: absolute;-->
+<!--    width: 100%;-->
+<!--    height: 100%;-->
+<!--    backface-visibility: hidden;-->
+<!--    border-radius: 20px;-->
+<!--    display: flex;-->
+<!--    flex-direction: column;-->
+<!--    justify-content: center;-->
+<!--    align-items: center;-->
+<!--    padding: 2rem;-->
+<!--    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);-->
+<!--}-->
+
+<!--/* Лицевая сторона */-->
+<!--.style-card-front {-->
+<!--    background: linear-gradient(135deg,-->
+<!--        hsl(calc(var(&#45;&#45;card-color) * 60), 70%, 40%) 0%,-->
+<!--        hsl(calc(var(&#45;&#45;card-color) * 60 + 30), 70%, 40%) 100%);-->
+<!--    color: white;-->
+<!--    position: relative;-->
+<!--    overflow: hidden;-->
+<!--}-->
+
+<!--.style-card-front::before {-->
+<!--    content: '';-->
+<!--    position: absolute;-->
+<!--    top: -50%;-->
+<!--    left: -50%;-->
+<!--    width: 200%;-->
+<!--    height: 200%;-->
+<!--    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);-->
+<!--    transform: rotate(45deg);-->
+<!--    animation: shine 3s infinite;-->
+<!--}-->
+
+<!--@keyframes shine {-->
+<!--    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }-->
+<!--    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }-->
+<!--}-->
+
+<!--.style-icon {-->
+<!--    font-size: 3rem;-->
+<!--    margin-bottom: 1rem;-->
+<!--    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));-->
+<!--}-->
+
+<!--.style-card-front h3 {-->
+<!--    font-size: 1.5rem;-->
+<!--    font-weight: 600;-->
+<!--    text-align: center;-->
+<!--    text-shadow: 0 2px 4px rgba(0,0,0,0.3);-->
+<!--}-->
+
+<!--.style-gradient {-->
+<!--    position: absolute;-->
+<!--    bottom: 0;-->
+<!--    left: 0;-->
+<!--    right: 0;-->
+<!--    height: 30%;-->
+<!--    background: linear-gradient(transparent, rgba(0,0,0,0.3));-->
+<!--    border-radius: 0 0 20px 20px;-->
+<!--}-->
+
+<!--/* Обратная сторона */-->
+<!--.style-card-back {-->
+<!--    background: var(&#45;&#45;bg-card);-->
+<!--    transform: rotateY(180deg);-->
+<!--    text-align: center;-->
+<!--}-->
+
+<!--.style-card-back h3 {-->
+<!--    color: var(&#45;&#45;accent-primary);-->
+<!--    margin-bottom: 1rem;-->
+<!--    font-size: 1.3rem;-->
+<!--}-->
+
+<!--.style-description {-->
+<!--    color: var(&#45;&#45;text-secondary);-->
+<!--    line-height: 1.5;-->
+<!--    margin-bottom: 1.5rem;-->
+<!--    font-size: 0.9rem;-->
+<!--}-->
+
+<!--.style-stats {-->
+<!--    display: flex;-->
+<!--    justify-content: space-around;-->
+<!--    width: 100%;-->
+<!--    margin-bottom: 1.5rem;-->
+<!--}-->
+
+<!--.stat {-->
+<!--    display: flex;-->
+<!--    align-items: center;-->
+<!--    gap: 0.5rem;-->
+<!--    color: var(&#45;&#45;text-secondary);-->
+<!--    font-size: 0.8rem;-->
+<!--}-->
+
+<!--.stat i {-->
+<!--    color: var(&#45;&#45;accent-primary);-->
+<!--}-->
+
+<!--.btn-style {-->
+<!--    background: linear-gradient(135deg, var(&#45;&#45;accent-primary) 0%, var(&#45;&#45;accent-secondary) 100%);-->
+<!--    color: white;-->
+<!--    padding: 0.8rem 1.5rem;-->
+<!--    border-radius: 25px;-->
+<!--    text-decoration: none;-->
+<!--    font-weight: 600;-->
+<!--    transition: all 0.3s ease;-->
+<!--    display: inline-flex;-->
+<!--    align-items: center;-->
+<!--    gap: 0.5rem;-->
+<!--}-->
+
+<!--.btn-style:hover {-->
+<!--    transform: translateY(-2px);-->
+<!--    box-shadow: 0 5px 15px rgba(255, 77, 148, 0.4);-->
+<!--    color: white;-->
+<!--}-->
+
+<!--/* Состояние когда нет направлений */-->
+<!--.empty-styles {-->
+<!--    grid-column: 1 / -1;-->
+<!--    text-align: center;-->
+<!--    padding: 4rem 2rem;-->
+<!--}-->
+
+<!--.empty-icon {-->
+<!--    color: var(&#45;&#45;accent-secondary);-->
+<!--    margin-bottom: 1rem;-->
+<!--}-->
+
+<!--.empty-styles h3 {-->
+<!--    color: var(&#45;&#45;text-primary);-->
+<!--    margin-bottom: 1rem;-->
+<!--}-->
+
+<!--.empty-styles p {-->
+<!--    color: var(&#45;&#45;text-secondary);-->
+<!--}-->
+
+<!--/* Адаптивность */-->
+<!--@media (max-width: 768px) {-->
+<!--    .styles-grid {-->
+<!--        grid-template-columns: 1fr;-->
+<!--        gap: 1.5rem;-->
+<!--        padding: 0 1rem;-->
+<!--    }-->
+
+<!--    .style-card {-->
+<!--        height: 280px;-->
+<!--    }-->
+
+<!--    .style-card-front,-->
+<!--    .style-card-back {-->
+<!--        padding: 1.5rem;-->
+<!--    }-->
+<!--}-->
+
+<!--/* Эффект параллакса при скролле */-->
+<!--.style-card {-->
+<!--    transition: transform 0.3s ease;-->
+<!--}-->
+
+<!--.style-card:nth-child(odd) {-->
+<!--    transform: translateY(20px);-->
+<!--}-->
+
+<!--.style-card:nth-child(even) {-->
+<!--    transform: translateY(-20px);-->
+<!--}-->
+
+<!--.styles-grid:hover .style-card {-->
+<!--    transform: translateY(0);-->
+<!--}-->
+<!--</style>-->
+
+<!--<script>-->
+<!--// Добавляем иконки для разных стилей-->
+<!--document.addEventListener('DOMContentLoaded', function() {-->
+<!--    const styleIcons = {-->
+<!--        'Хип-хоп': 'street-view',-->
+<!--        'Бальные танцы': 'user-friends',-->
+<!--        'Сальса': 'fire',-->
+<!--        'Балет': 'feather',-->
+<!--        'Джаз-фанк': 'bolt',-->
+<!--        'Контемпорари': 'wind',-->
+<!--        'Танго': 'heart',-->
+<!--        'Брейк-данс': 'sync-alt'-->
+<!--    };-->
+
+<!--    document.querySelectorAll('.style-card h3').forEach(title => {-->
+<!--        const styleName = title.textContent.trim();-->
+<!--        if (styleIcons[styleName]) {-->
+<!--            const iconElement = title.closest('.style-card').querySelector('.style-icon i');-->
+<!--            iconElement.className = `fas fa-${styleIcons[styleName]}`;-->
+<!--        }-->
+<!--    });-->
+<!--});-->
+<!--</script>-->
+<!--{% endblock %}-->

@@ -93,18 +93,72 @@ def profile_view(request):
     if request.user.role != 'client':
         return HttpResponseForbidden()
 
-    # Логика для вкладок профиля
     tab = request.GET.get('tab', 'bookings')
 
-    if tab == 'history':
-        history_bookings = Booking.objects.filter(client=request.user, status__in=['attended', 'missed', 'cancelled'])
-        return render(request, 'main/profile.html', {'tab': tab, 'history_bookings': history_bookings})
+    # Активные записи (только будущие)
+    active_bookings = Booking.objects.filter(
+        client=request.user,
+        status='booked'
+    ).select_related('schedule').order_by('schedule__day_of_week', 'schedule__start_time')
 
-    elif tab == 'settings':
-        # Логика для настроек
-        return render(request, 'main/profile.html', {'tab': tab})
+    # История (завершенные занятия)
+    history_bookings = Booking.objects.filter(
+        client=request.user
+    ).exclude(status='booked').select_related('schedule').order_by('-booking_date')
 
-    else:
-        # Активные записи по умолчанию
-        active_bookings = Booking.objects.filter(client=request.user, status='booked')
-        return render(request, 'main/profile.html', {'tab': tab, 'active_bookings': active_bookings})
+    context = {
+        'tab': tab,
+        'active_bookings': active_bookings,
+        'history_bookings': history_bookings
+    }
+
+    return render(request, 'main/profile.html', context)
+
+# записи на трени
+@login_required
+def book_class(request, schedule_id):
+    if request.user.role != 'client':
+        return JsonResponse({'success': False, 'error': 'Только клиенты могут записываться'})
+
+    try:
+        schedule = Schedule.objects.get(id=schedule_id)
+
+        # Проверяем нет ли уже записи
+        existing_booking = Booking.objects.filter(client=request.user, schedule=schedule).exists()
+        if existing_booking:
+            return JsonResponse({'success': False, 'error': 'Вы уже записаны на это занятие'})
+
+        # Проверяем есть ли свободные места
+        current_bookings = Booking.objects.filter(schedule=schedule, status='booked').count()
+        if current_bookings >= schedule.max_participants:
+            return JsonResponse({'success': False, 'error': 'Нет свободных мест'})
+
+        # Создаем запись
+        booking = Booking.objects.create(
+            client=request.user,
+            schedule=schedule,
+            status='booked'
+        )
+
+        return JsonResponse({'success': True, 'message': 'Запись успешно оформлена'})
+
+    except Schedule.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Занятие не найдено'})
+
+
+@login_required
+def cancel_booking(request, booking_id):
+    if request.user.role != 'client':
+        return JsonResponse({'success': False, 'error': 'Только клиенты могут отменять записи'})
+
+    try:
+        booking = Booking.objects.get(id=booking_id, client=request.user)
+
+        # Меняем статус на отменено
+        booking.status = 'cancelled'
+        booking.save()
+
+        return JsonResponse({'success': True, 'message': 'Запись успешно отменена'})
+
+    except Booking.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Запись не найдена'})

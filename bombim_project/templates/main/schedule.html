@@ -129,9 +129,62 @@
 <script>
 function bookClass(scheduleId) {
     if (confirm('Записаться на это занятие?')) {
-        // Здесь будет AJAX запрос для записи
-        alert('Запись успешно оформлена!');
-        location.reload();
+        // Отправляем AJAX запрос на сервер
+        fetch(`/book/${scheduleId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // Обновляем страницу чтобы показать новую запись
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при записи');
+        });
+    }
+}
+
+// Функция для получения CSRF токена
+function getCSRFToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    return cookieValue;
+}
+
+// Функция для отмены записи (для профиля)
+function cancelBooking(bookingId) {
+    if (confirm('Вы уверены, что хотите отменить запись?')) {
+        fetch(`/cancel-booking/${bookingId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при отмене записи');
+        });
     }
 }
 </script>
