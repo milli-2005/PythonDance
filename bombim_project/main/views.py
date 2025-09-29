@@ -1,9 +1,59 @@
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
+from django.views.decorators.csrf import csrf_exempt
+import traceback
 from .models import Schedule, Booking, DanceStyle, Trainer
 from .forms import CustomUserCreationForm
+
+
+@csrf_exempt
+@login_required
+def book_class(request, schedule_id):
+    print("=== BOOKING DEBUG ===")
+    print(f"Method: {request.method}")
+    print(f"User: {request.user} (id: {request.user.id})")
+    print(f"User role: {request.user.role}")
+    print(f"Schedule ID: {schedule_id}")
+    print(f"Authenticated: {request.user.is_authenticated}")
+
+    try:
+        # Проверяем роль пользователя
+        if request.user.role != 'client':
+            print("❌ User is not a client")
+            return JsonResponse({'success': False, 'error': 'Только клиенты могут записываться'})
+
+        # Получаем расписание
+        schedule = Schedule.objects.get(id=schedule_id)
+        print(f"✅ Schedule found: {schedule}")
+
+        # Проверяем нет ли уже записи
+        existing_booking = Booking.objects.filter(client=request.user, schedule=schedule).first()
+        if existing_booking:
+            print(f"❌ Already booked: {existing_booking}")
+            return JsonResponse({'success': False, 'error': 'Вы уже записаны на это занятие'})
+
+        # Создаем запись
+        print("Creating booking...")
+        booking = Booking.objects.create(
+            client=request.user,
+            schedule=schedule,
+            status='booked'
+        )
+        print(f"✅ Booking created successfully: {booking.id}")
+
+        return JsonResponse({'success': True, 'message': 'Запись успешно оформлена'})
+
+    except Schedule.DoesNotExist:
+        print("❌ Schedule does not exist")
+        return JsonResponse({'success': False, 'error': 'Занятие не найдено'})
+    except Exception as e:
+        print(f"❌ Unexpected error: {str(e)}")
+        print("Traceback:")
+        print(traceback.format_exc())
+        return JsonResponse({'success': False, 'error': f'Внутренняя ошибка сервера: {str(e)}'})
 
 
 # Главная страница
@@ -38,10 +88,13 @@ def schedule_view(request):
     if trainer_filter:
         schedules = schedules.filter(trainer_id=trainer_filter)
 
-    # Проверяем записи пользователя
+    # Правильно получаем ID записей пользователя
     user_bookings = []
     if request.user.is_authenticated and request.user.role == 'client':
-        user_bookings = Booking.objects.filter(client=request.user).values_list('schedule_id', flat=True)
+        user_bookings = list(Booking.objects.filter(
+            client=request.user,
+            status='booked'
+        ).values_list('schedule_id', flat=True))
 
     return render(request, 'main/schedule.html', {
         'schedules': schedules,
@@ -114,51 +167,72 @@ def profile_view(request):
 
     return render(request, 'main/profile.html', context)
 
-# записи на трени
-@login_required
-def book_class(request, schedule_id):
-    if request.user.role != 'client':
-        return JsonResponse({'success': False, 'error': 'Только клиенты могут записываться'})
 
-    try:
-        schedule = Schedule.objects.get(id=schedule_id)
-
-        # Проверяем нет ли уже записи
-        existing_booking = Booking.objects.filter(client=request.user, schedule=schedule).exists()
-        if existing_booking:
-            return JsonResponse({'success': False, 'error': 'Вы уже записаны на это занятие'})
-
-        # Проверяем есть ли свободные места
-        current_bookings = Booking.objects.filter(schedule=schedule, status='booked').count()
-        if current_bookings >= schedule.max_participants:
-            return JsonResponse({'success': False, 'error': 'Нет свободных мест'})
-
-        # Создаем запись
-        booking = Booking.objects.create(
-            client=request.user,
-            schedule=schedule,
-            status='booked'
-        )
-
-        return JsonResponse({'success': True, 'message': 'Запись успешно оформлена'})
-
-    except Schedule.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Занятие не найдено'})
-
-
+@csrf_exempt
 @login_required
 def cancel_booking(request, booking_id):
-    if request.user.role != 'client':
-        return JsonResponse({'success': False, 'error': 'Только клиенты могут отменять записи'})
+    print("=== CANCEL BOOKING DEBUG ===")
+    print(f"Booking ID: {booking_id}")
+    print(f"User: {request.user}")
 
     try:
-        booking = Booking.objects.get(id=booking_id, client=request.user)
+        if request.user.role != 'client':
+            return JsonResponse({'success': False, 'error': 'Только клиенты могут отменять записи'})
 
-        # Меняем статус на отменено
-        booking.status = 'cancelled'
-        booking.save()
+        booking = Booking.objects.get(id=booking_id, client=request.user)
+        booking.delete()
+
+        print(f"✅ Booking deleted: {booking_id}")
+        return JsonResponse({'success': True, 'message': 'Запись успешно отменена'})
+
+    except Booking.DoesNotExist:
+        print("❌ Booking not found")
+        return JsonResponse({'success': False, 'error': 'Запись не найдена'})
+    except Exception as e:
+        print(f"❌ Cancel error: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@csrf_exempt
+@login_required
+def cancel_booking(request, booking_id):
+    print("=== CANCEL BOOKING DEBUG ===")
+    print(f"Method: {request.method}")
+    print(f"User: {request.user} (id: {request.user.id})")
+    print(f"User role: {request.user.role}")
+    print(f"Booking ID to cancel: {booking_id}")
+    print(f"Authenticated: {request.user.is_authenticated}")
+
+    try:
+        # Проверяем роль пользователя
+        if request.user.role != 'client':
+            print("❌ User is not a client")
+            return JsonResponse({'success': False, 'error': 'Только клиенты могут отменять записи'})
+
+        # Получаем запись
+        booking = Booking.objects.get(id=booking_id, client=request.user)
+        print(f"✅ Booking found: {booking}")
+        print(f"Booking details - Client: {booking.client}, Schedule: {booking.schedule}")
+
+        # Удаляем запись
+        print("Deleting booking...")
+        booking.delete()
+        print(f"✅ Booking deleted successfully: {booking_id}")
+
+        # Проверяем что запись действительно удалена
+        still_exists = Booking.objects.filter(id=booking_id).exists()
+        print(f"Booking still exists after delete: {still_exists}")
 
         return JsonResponse({'success': True, 'message': 'Запись успешно отменена'})
 
     except Booking.DoesNotExist:
+        print("❌ Booking does not exist or doesn't belong to user")
+        # Посмотрим какие записи вообще есть у пользователя
+        user_bookings = Booking.objects.filter(client=request.user)
+        print(f"User's bookings: {list(user_bookings.values_list('id', flat=True))}")
         return JsonResponse({'success': False, 'error': 'Запись не найдена'})
+    except Exception as e:
+        print(f"❌ Unexpected error in cancel: {str(e)}")
+        print("Traceback:")
+        print(traceback.format_exc())
+        return JsonResponse({'success': False, 'error': f'Внутренняя ошибка сервера: {str(e)}'})
