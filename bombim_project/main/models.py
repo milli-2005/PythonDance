@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinLengthValidator
 from datetime import time
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -58,6 +59,61 @@ class Schedule(models.Model):
     dance_style = models.ForeignKey(DanceStyle, on_delete=models.CASCADE)
     trainer = models.ForeignKey(Trainer, on_delete=models.CASCADE)
     max_participants = models.PositiveIntegerField(default=10)
+
+    # ДОБАВЛЯЕМ НОВЫЕ ПОЛЯ
+    start_date = models.DateField(default=timezone.now, help_text="Дата начала действия расписания")
+    end_date = models.DateField(blank=True, null=True, help_text="Дата окончания (если есть)")
+    is_recurring = models.BooleanField(default=True, help_text="Повторяющееся занятие")
+    is_active = models.BooleanField(default=True, help_text="Активное занятие")
+
+    class Meta:
+        ordering = ['day_of_week', 'start_time']
+
+    def __str__(self):
+        return f"{self.get_day_of_week_display()} {self.start_time}-{self.end_time} - {self.dance_style.name}"
+
+    # Метод для получения дат занятий
+    def get_upcoming_dates(self, weeks=2):
+        """Возвращает даты занятий на ближайшие недели"""
+        from datetime import datetime, timedelta
+        today = timezone.now().date()
+        dates = []
+
+        for week in range(weeks):
+            for day in range(7):
+                current_date = today + timedelta(days=day + week * 7)
+                if current_date.weekday() == self.day_of_week:
+                    # Проверяем что дата в пределах действия расписания
+                    if (self.start_date <= current_date and
+                            (self.end_date is None or current_date <= self.end_date)):
+                        dates.append(current_date)
+        return dates
+
+    def can_be_booked(self, target_date=None):
+        """Можно ли записаться на занятие"""
+        if target_date is None:
+            target_date = timezone.now().date()
+
+        # Проверяем что занятие активно
+        if not self.is_active:
+            return False
+
+        # Проверяем что дата в пределах расписания
+        if not (self.start_date <= target_date and
+                (self.end_date is None or target_date <= self.end_date)):
+            return False
+
+        # Проверяем что это правильный день недели
+        if target_date.weekday() != self.day_of_week:
+            return False
+
+        # Проверяем что занятие еще не прошло
+        from datetime import datetime
+        now = timezone.now()
+        class_datetime = datetime.combine(target_date, self.start_time)
+        class_datetime = timezone.make_aware(class_datetime)
+
+        return class_datetime > now
 
     class Meta:
         ordering = ['day_of_week', 'start_time']

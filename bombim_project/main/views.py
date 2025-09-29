@@ -7,6 +7,8 @@ from django.views.decorators.csrf import csrf_exempt
 import traceback
 from .models import Schedule, Booking, DanceStyle, Trainer
 from .forms import CustomUserCreationForm
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 
 @csrf_exempt
@@ -74,8 +76,38 @@ def trainers_view(request):
 
 
 # Расписание
+from django.utils import timezone
+from datetime import datetime, timedelta
+
+
 def schedule_view(request):
-    schedules = Schedule.objects.all()
+    # Определяем текущую дату и время
+    now = timezone.now()
+    today = now.date()
+
+    # Получаем параметры из GET запроса
+    week_offset = int(request.GET.get('week', 0))
+    date_filter = request.GET.get('date')
+
+    # Если выбрана конкретная дата, вычисляем неделю для этой даты
+    selected_date = None
+    if date_filter:
+        try:
+            selected_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+            # Вычисляем смещение недели для выбранной даты
+            today_week_start = today - timedelta(days=today.weekday())
+            selected_week_start = selected_date - timedelta(days=selected_date.weekday())
+            week_offset = (selected_week_start - today_week_start).days // 7
+        except ValueError:
+            selected_date = None
+            date_filter = None
+
+    # Вычисляем начало текущей недели с учетом смещения
+    current_week_start = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
+    dates = [current_week_start + timedelta(days=i) for i in range(7)]
+
+    # Получаем все активные расписания
+    schedules = Schedule.objects.filter(is_active=True)
     styles = DanceStyle.objects.all()
     trainers = Trainer.objects.all()
 
@@ -88,7 +120,37 @@ def schedule_view(request):
     if trainer_filter:
         schedules = schedules.filter(trainer_id=trainer_filter)
 
-    # Правильно получаем ID записей пользователя
+    # Создаем структуру данных для отображения ВСЕХ занятий
+    schedule_data = []
+    for schedule in schedules:
+        for date in dates:
+            # Проверяем что это правильный день недели и дата в пределах расписания
+            if (date.weekday() == schedule.day_of_week and
+                    schedule.start_date <= date and
+                    (schedule.end_date is None or date <= schedule.end_date)):
+                # Определяем статус занятия
+                class_datetime = datetime.combine(date, schedule.start_time)
+                class_datetime = timezone.make_aware(class_datetime)
+                is_past = class_datetime < now
+                is_today = date == today
+
+                schedule_data.append({
+                    'schedule': schedule,
+                    'date': date,
+                    'datetime': class_datetime,
+                    'can_book': not is_past,
+                    'is_past': is_past,
+                    'is_today': is_today,
+                })
+
+    # Если выбран конкретный день - фильтруем по нему
+    if selected_date:
+        schedule_data = [item for item in schedule_data if item['date'] == selected_date]
+
+    # Сортируем занятия по дате и времени
+    schedule_data.sort(key=lambda x: (x['date'], x['schedule'].start_time))
+
+    # Получаем записи пользователя
     user_bookings = []
     if request.user.is_authenticated and request.user.role == 'client':
         user_bookings = list(Booking.objects.filter(
@@ -97,10 +159,17 @@ def schedule_view(request):
         ).values_list('schedule_id', flat=True))
 
     return render(request, 'main/schedule.html', {
-        'schedules': schedules,
+        'schedule_data': schedule_data,
+        'dates': dates,
         'styles': styles,
         'trainers': trainers,
-        'user_bookings': user_bookings
+        'user_bookings': user_bookings,
+        'today': today,
+        'current_week_start': current_week_start,
+        'week_offset': week_offset,
+        'prev_week': week_offset - 1,
+        'next_week': week_offset + 1,
+        'selected_date': selected_date,
     })
 
 

@@ -6,12 +6,50 @@
 <section class="mt-5">
     <h1 class="text-center">Расписание занятий</h1>
     
-    <!-- Фильтры -->
+    <!-- Навигация по неделям и фильтры -->
     <div class="card">
         <div class="style-content">
-            <h3>Фильтры</h3>
-            <form method="get" class="filter-form">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <!-- Навигация по неделям -->
+            <div class="week-navigation">
+                <div class="week-controls">
+                    <button class="btn btn-outline" onclick="navigateWeek(-1)">
+                        <i class="fas fa-chevron-left"></i> Предыдущая неделя
+                    </button>
+
+                    <h3 class="week-title">
+                        Неделя: {{ current_week_start|date:"d M" }} - {{ dates.6|date:"d M Y" }}
+                        {% if week_offset == 0 %}
+                            <span class="current-week-badge">Текущая неделя</span>
+                        {% endif %}
+                    </h3>
+
+                    <button class="btn btn-outline" onclick="navigateWeek(1)">
+                        Следующая неделя <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- Навигация по дням недели -->
+                <div class="days-grid">
+                    {% for date in dates %}
+                    <button class="day-link {% if date == today %}today{% endif %} {% if selected_date == date %}active{% endif %}"
+                            onclick="selectDate('{{ date|date:"Y-m-d" }}')">
+                        <div class="day-name">{{ date|date:"D" }}</div>
+                        <div class="day-date">{{ date|date:"d.m" }}</div>
+                        {% if date == today %}
+                        <div class="today-badge">Сегодня</div>
+                        {% endif %}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <form method="get" class="filter-form" onsubmit="event.preventDefault(); applyFilters();">
+                <input type="hidden" name="week" value="{{ week_offset }}">
+                {% if selected_date %}
+                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                {% endif %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <div>
                         <label class="form-label">Направление:</label>
                         <select name="style" class="form-control">
@@ -35,9 +73,12 @@
                         </select>
                     </div>
                 </div>
-                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button type="submit" class="btn btn-primary">Применить фильтры</button>
-                    <a href="{% url 'schedule' %}" class="btn btn-outline">Сбросить</a>
+                    <a href="{% url 'schedule' %}" class="btn btn-outline">Сбросить всё</a>
+                    {% if selected_date %}
+                    <button type="button" class="btn btn-outline" onclick="showFullWeek()">Показать всю неделю</button>
+                    {% endif %}
                 </div>
             </form>
         </div>
@@ -46,47 +87,79 @@
     <!-- Расписание -->
     <div class="card mt-4">
         <div class="style-content">
-            <h3>Занятия на неделю</h3>
-            
-            {% if schedules %}
+            <h3>
+                {% if selected_date %}
+                    Занятия на {{ selected_date|date:"d.m.Y" }}
+                {% else %}
+                    Занятия на неделю {{ current_week_start|date:"d.m" }}-{{ dates.6|date:"d.m" }}
+                {% endif %}
+                <small style="color: var(--text-secondary); font-size: 0.9rem;">
+                    (показано: {{ schedule_data|length }} занятий)
+                </small>
+            </h3>
+
+            {% if schedule_data %}
             <div class="schedule-table">
-                {% for schedule in schedules %}
-                <div class="schedule-item">
-                    <div class="schedule-day">
-                        <strong>{{ schedule.get_day_of_week_display }}</strong>
+                {% for item in schedule_data %}
+                <div class="schedule-item {% if item.is_past %}past-class{% endif %} {% if item.is_today %}today-class{% endif %}">
+                    <div class="schedule-date">
+                        <strong>{{ item.date|date:"d.m.Y" }}</strong>
+                        <div class="day-name">{{ item.date|date:"l" }}</div>
+                        {% if item.is_today %}
+                        <div class="today-badge-small">Сегодня</div>
+                        {% endif %}
                     </div>
                     <div class="schedule-time">
-                        {{ schedule.start_time }} - {{ schedule.end_time }}
+                        {{ item.schedule.start_time }} - {{ item.schedule.end_time }}
                     </div>
                     <div class="schedule-style">
-                        {{ schedule.dance_style.name }}
+                        <strong>{{ item.schedule.dance_style.name }}</strong>
                     </div>
                     <div class="schedule-trainer">
-                        {{ schedule.trainer.user.get_full_name }}
+                        <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
                     </div>
                     <div class="schedule-action">
-    {% if user.is_authenticated and user.role == 'client' %}
-        {% if schedule.id in user_bookings %}
-            <button class="btn btn-outline" disabled>Вы записаны</button>
-        {% else %}
-            <button class="btn btn-primary"
-        data-schedule-id="{{ schedule.id }}"
-        onclick="bookClass({{ schedule.id }}, this)">
-    Записаться
-</button>
-        {% endif %}
-    {% else %}
-        <a href="{% url 'login' %}" class="btn btn-primary">Записаться</a>
-    {% endif %}
-</div>
+                        {% if user.is_authenticated and user.role == 'client' %}
+                            {% if item.schedule.id in user_bookings %}
+                                <button class="btn btn-success" disabled>
+                                    <i class="fas fa-check"></i> Вы записаны
+                                </button>
+                            {% elif item.is_past %}
+                                <button class="btn btn-outline" disabled>
+                                    <i class="fas fa-clock"></i> Прошло
+                                </button>
+                            {% else %}
+                                <button class="btn btn-primary"
+                                        data-schedule-id="{{ item.schedule.id }}"
+                                        onclick="bookClass({{ item.schedule.id }}, this)">
+                                    <i class="fas fa-calendar-plus"></i> Записаться
+                                </button>
+                            {% endif %}
+                        {% else %}
+                            {% if item.is_past %}
+                                <button class="btn btn-outline" disabled>
+                                    <i class="fas fa-clock"></i> Прошло
+                                </button>
+                            {% else %}
+                                <a href="{% url 'login' %}" class="btn btn-primary">
+                                    <i class="fas fa-sign-in-alt"></i> Войти для записи
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <div class="text-center" style="padding: 2rem;">
-                <i class="fas fa-calendar-times fa-3x" style="color: var(--accent-secondary);"></i>
+            <div class="text-center" style="padding: 3rem;">
+                <i class="fas fa-calendar-times fa-4x" style="color: var(--accent-secondary);"></i>
                 <h4>Занятий не найдено</h4>
-                <p style="color: var(--text-secondary);">Попробуйте изменить параметры фильтрации</p>
+                <p style="color: var(--text-secondary);">
+                    Попробуйте изменить параметры фильтрации или выбрать другую неделю
+                </p>
+                <div style="margin-top: 1rem;">
+                    <a href="?week=0" class="btn btn-primary">Вернуться к текущей неделе</a>
+                </div>
             </div>
             {% endif %}
         </div>
@@ -94,6 +167,106 @@
 </section>
 
 <style>
+.week-navigation {
+    margin-bottom: 1rem;
+}
+
+.week-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.week-title {
+    text-align: center;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.current-week-badge {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: normal;
+}
+
+.days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.day-link {
+    display: block;
+    text-align: center;
+    padding: 0.8rem 0.5rem;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    transition: all 0.3s ease;
+    position: relative;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.day-link:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.day-link.today {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: white;
+}
+
+.day-link.active {
+    border: 2px solid var(--accent-primary);
+    background: var(--accent-primary);
+    color: white;
+}
+
+.day-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.day-date {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: 0.3rem;
+}
+
+.today-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-top: 0.3rem;
+}
+
+.today-badge-small {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-top: 0.3rem;
+    display: inline-block;
+}
+
 .schedule-table {
     margin-top: 1rem;
 }
@@ -105,14 +278,42 @@
     padding: 1rem;
     border-bottom: 1px solid var(--bg-secondary);
     align-items: center;
+    transition: all 0.3s ease;
 }
 
 .schedule-item:last-child {
     border-bottom: none;
 }
 
-.filter-form {
-    margin-top: 1rem;
+.schedule-item.past-class {
+    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.schedule-item.today-class {
+    border-left: 4px solid var(--accent-primary);
+}
+
+.schedule-date {
+    display: flex;
+    flex-direction: column;
+}
+
+.schedule-date .day-name {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+.btn-success {
+    background: var(--success);
+    color: white;
+    border: none;
+}
+
+.btn-success:hover {
+    background: #00b386;
+    color: white;
 }
 
 @media (max-width: 768px) {
@@ -121,17 +322,31 @@
         text-align: center;
         gap: 0.5rem;
     }
-    
+
+    .days-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .week-controls {
+        flex-direction: column;
+        text-align: center;
+    }
+
     .filter-form > div {
         grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .days-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 </style>
 
 <script>
-// Глобальная функция для получения CSRF токена
+// Функция для получения CSRF токена
 function getCSRFToken() {
-    // Пробуем найти в cookies
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
@@ -143,36 +358,109 @@ function getCSRFToken() {
             }
         }
     }
-
-    // Если не нашли в cookies, ищем в meta теге
-    if (!cookieValue) {
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        if (csrfMeta) {
-            cookieValue = csrfMeta.getAttribute('content');
-        }
-    }
-
-    // Если все еще не нашли, ищем в hidden input
-    if (!cookieValue) {
-        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (csrfInput) {
-            cookieValue = csrfInput.value;
-        }
-    }
-
-    console.log('CSRF Token:', cookieValue ? 'Found' : 'Not found');
     return cookieValue;
+}
+
+// Функция для навигации по неделям
+function navigateWeek(offset) {
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentWeek = parseInt(urlParams.get('week') || '0');
+    currentWeek += offset;
+
+    // Собираем все параметры
+    const params = new URLSearchParams();
+    params.set('week', currentWeek);
+
+    // Сохраняем фильтры
+    const style = urlParams.get('style');
+    const trainer = urlParams.get('trainer');
+    const date = urlParams.get('date');
+
+    if (style) params.set('style', style);
+    if (trainer) params.set('trainer', trainer);
+    if (date) params.set('date', date);
+
+    // Переходим на новый URL
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
+
+// Функция для выбора даты
+function selectDate(dateString) {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Собираем все параметры
+    const params = new URLSearchParams();
+
+    // Сохраняем неделю и добавляем дату
+    const week = urlParams.get('week') || '0';
+    const style = urlParams.get('style');
+    const trainer = urlParams.get('trainer');
+
+    params.set('week', week);
+    params.set('date', dateString);
+
+    if (style) params.set('style', style);
+    if (trainer) params.set('trainer', trainer);
+
+    // Переходим на новый URL
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+}
+
+// Функция для применения фильтров
+function applyFilters() {
+    const form = document.querySelector('.filter-form');
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Сохраняем текущие неделю и дату
+    const week = urlParams.get('week') || '0';
+    const date = urlParams.get('date');
+
+    // Добавляем скрытые поля если их нет
+    let weekInput = form.querySelector('input[name="week"]');
+    if (!weekInput) {
+        weekInput = document.createElement('input');
+        weekInput.type = 'hidden';
+        weekInput.name = 'week';
+        form.appendChild(weekInput);
+    }
+    weekInput.value = week;
+
+    let dateInput = form.querySelector('input[name="date"]');
+    if (date && !dateInput) {
+        dateInput = document.createElement('input');
+        dateInput.type = 'hidden';
+        dateInput.name = 'date';
+        form.appendChild(dateInput);
+        dateInput.value = date;
+    }
+
+    form.submit();
+}
+
+// Функция для показа всей недели
+function showFullWeek() {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Собираем параметры без даты
+    const params = new URLSearchParams();
+
+    const week = urlParams.get('week') || '0';
+    const style = urlParams.get('style');
+    const trainer = urlParams.get('trainer');
+
+    params.set('week', week);
+    if (style) params.set('style', style);
+    if (trainer) params.set('trainer', trainer);
+
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
 }
 
 // Функция для записи на занятие
 function bookClass(scheduleId, button) {
-    console.log('Attempting to book schedule:', scheduleId);
-
     if (!confirm('Записаться на это занятие?')) {
         return;
     }
 
-    // Показываем loading состояние
     const originalText = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Записываем...';
@@ -180,13 +468,12 @@ function bookClass(scheduleId, button) {
     const csrfToken = getCSRFToken();
 
     if (!csrfToken) {
-        alert('❌ Ошибка безопасности. Пожалуйста, обновите страницу.');
+        alert('Ошибка безопасности. Пожалуйста, обновите страницу.');
         button.disabled = false;
         button.innerHTML = originalText;
         return;
     }
 
-    // Создаем FormData для отправки
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', csrfToken);
 
@@ -194,33 +481,24 @@ function bookClass(scheduleId, button) {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest'
         },
         body: formData
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Response data:', data);
         if (data.success) {
             // Обновляем интерфейс
             updateBookingUI(scheduleId, true);
             alert('✅ ' + data.message);
         } else {
             alert('❌ ' + data.error);
-            // Восстанавливаем кнопку
             button.disabled = false;
             button.innerHTML = originalText;
         }
     })
     .catch(error => {
-        console.error('Fetch error:', error);
-        alert('❌ Ошибка сети: ' + error.message);
+        console.error('Error:', error);
+        alert('Произошла ошибка при записи');
         button.disabled = false;
         button.innerHTML = originalText;
     });
@@ -233,7 +511,7 @@ function updateBookingUI(scheduleId, isBooked) {
         if (isBooked) {
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-check"></i> Вы записаны';
-            button.className = 'btn btn-outline';
+            button.className = 'btn btn-success';
             button.onclick = null;
         }
     });
@@ -241,8 +519,6 @@ function updateBookingUI(scheduleId, isBooked) {
 
 // Функция для отмены записи
 function cancelBooking(bookingId, button) {
-    console.log('Attempting to cancel booking:', bookingId);
-
     if (!confirm('Вы уверены, что хотите отменить запись?')) {
         return;
     }
@@ -254,7 +530,7 @@ function cancelBooking(bookingId, button) {
     const csrfToken = getCSRFToken();
 
     if (!csrfToken) {
-        alert('❌ Ошибка безопасности. Пожалуйста, обновите страницу.');
+        alert('Ошибка безопасности. Пожалуйста, обновите страницу.');
         button.disabled = false;
         button.innerHTML = originalText;
         return;
@@ -267,20 +543,12 @@ function cancelBooking(bookingId, button) {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest'
         },
         body: formData
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        console.log('Cancel response:', data);
         if (data.success) {
-            // Удаляем элемент с анимацией
             const bookingElement = button.closest('.schedule-item');
             if (bookingElement) {
                 bookingElement.style.transition = 'all 0.3s ease';
@@ -304,7 +572,7 @@ function cancelBooking(bookingId, button) {
     })
     .catch(error => {
         console.error('Cancel error:', error);
-        alert('❌ Ошибка сети: ' + error.message);
+        alert('Ошибка сети: ' + error.message);
         button.disabled = false;
         button.innerHTML = originalText;
     });
@@ -325,19 +593,5 @@ function checkEmptyBookings() {
         `;
     }
 }
-
-// Добавляем CSRF токен в скрытое поле на странице
-document.addEventListener('DOMContentLoaded', function() {
-    // Создаем скрытое поле с CSRF токеном если его нет
-    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = getCSRFToken();
-        document.body.appendChild(csrfInput);
-    }
-
-    console.log('Page loaded, CSRF token ready');
-});
 </script>
 {% endblock %}
