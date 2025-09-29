@@ -221,12 +221,29 @@ def profile_view(request):
     active_bookings = Booking.objects.filter(
         client=request.user,
         status='booked'
-    ).select_related('schedule').order_by('schedule__day_of_week', 'schedule__start_time')
+    ).select_related('schedule', 'schedule__dance_style', 'schedule__trainer', 'schedule__trainer__user').order_by(
+        'schedule__start_date', 'schedule__start_time')
 
-    # История (завершенные занятия)
+    # История посещений (завершенные и отмененные занятия)
     history_bookings = Booking.objects.filter(
         client=request.user
-    ).exclude(status='booked').select_related('schedule').order_by('-booking_date')
+    ).exclude(status='booked').select_related('schedule', 'schedule__dance_style', 'schedule__trainer',
+                                              'schedule__trainer__user').order_by('-booking_date')
+
+    # Обработка формы настроек профиля
+    if request.method == 'POST' and tab == 'settings':
+        user = request.user
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.email = request.POST.get('email', user.email)
+        user.phone = request.POST.get('phone', user.phone)
+
+        birth_date = request.POST.get('birth_date')
+        if birth_date:
+            user.birth_date = birth_date
+
+        user.save()
+        # Можно добавить сообщение об успехе
 
     context = {
         'tab': tab,
@@ -235,7 +252,6 @@ def profile_view(request):
     }
 
     return render(request, 'main/profile.html', context)
-
 
 @csrf_exempt
 @login_required
