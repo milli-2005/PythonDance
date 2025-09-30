@@ -30,27 +30,30 @@
                 <h3>Мои предстоящие занятия</h3>
                 {% if active_bookings %}
                 <div class="bookings-table">
-                    {% for booking in active_bookings %}
+                    {% for item in active_bookings %}
                     <div class="booking-item">
                         <div class="booking-date">
-                            <strong>{{ booking.schedule.start_date|date:"d.m.Y" }}</strong>
-                            <div class="day-name">{{ booking.schedule.get_day_of_week_display }}</div>
+                            <strong>{{ item.class_date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">{{ item.schedule.get_day_of_week_display }}</div>
+                            {% if item.class_date == today %}
+                            <div class="today-badge-small">Сегодня</div>
+                            {% endif %}
                         </div>
                         <div class="booking-time">
-                            {{ booking.schedule.start_time }} - {{ booking.schedule.end_time }}
+                            {{ item.schedule.start_time }} - {{ item.schedule.end_time }}
                         </div>
                         <div class="booking-style">
-                            <strong>{{ booking.schedule.dance_style.name }}</strong>
+                            <strong>{{ item.schedule.dance_style.name }}</strong>
                         </div>
                         <div class="booking-trainer">
-                            <i class="fas fa-user"></i> {{ booking.schedule.trainer.user.get_full_name }}
+                            <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
                         </div>
                         <div class="booking-status">
                             <span class="status-badge booked">Записан</span>
                         </div>
                         <div class="booking-actions">
                             <button class="btn btn-outline"
-                                    onclick="cancelBooking({{ booking.id }}, this)">
+                                    onclick="cancelBooking({{ item.booking.id }}, this)">
                                 Отменить запись
                             </button>
                         </div>
@@ -77,29 +80,26 @@
                 <h3>История моих занятий</h3>
                 {% if history_bookings %}
                 <div class="bookings-table">
-                    {% for booking in history_bookings %}
+                    {% for item in history_bookings %}
                     <div class="booking-item history-item">
                         <div class="booking-date">
-                            <strong>{{ booking.booking_date|date:"d.m.Y" }}</strong>
-                            <div class="day-name">Запись создана</div>
+                            <strong>{{ item.class_date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">Дата занятия</div>
                         </div>
                         <div class="booking-info">
                             <div class="booking-datetime">
-                                {{ booking.schedule.start_date|date:"d.m.Y" }} • {{ booking.schedule.start_time }}
-                            </div>
-                            <div class="booking-style">
-                                {{ booking.schedule.dance_style.name }}
+                                {{ item.schedule.start_time }} • {{ item.schedule.dance_style.name }}
                             </div>
                             <div class="booking-trainer">
-                                <i class="fas fa-user"></i> {{ booking.schedule.trainer.user.get_full_name }}
+                                <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
                             </div>
                         </div>
                         <div class="booking-status">
-                            {% if booking.status == 'attended' %}
+                            {% if item.booking.status == 'attended' %}
                                 <span class="status-badge attended">Посещено</span>
-                            {% elif booking.status == 'missed' %}
+                            {% elif item.booking.status == 'missed' %}
                                 <span class="status-badge missed">Не пришел</span>
-                            {% elif booking.status == 'cancelled' %}
+                            {% elif item.booking.status == 'cancelled' %}
                                 <span class="status-badge cancelled">Отменено</span>
                             {% endif %}
                         </div>
@@ -113,18 +113,24 @@
                     <div class="stats-grid">
                         <div class="stat-item">
                             <div class="stat-number">{{ history_bookings|length }}</div>
-                            <div class="stat-label">Всего записей</div>
+                            <div class="stat-label">Всего занятий</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-number">{{ history_bookings|length }}</div>
+                            <div class="stat-number">
+                                {{ history_bookings|length|default:0 }}
+                            </div>
                             <div class="stat-label">Посещено</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-number">0</div>
+                            <div class="stat-number">
+                                {{ history_bookings|length|default:0 }}
+                            </div>
                             <div class="stat-label">Пропущено</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-number">0</div>
+                            <div class="stat-number">
+                                {{ history_bookings|length|default:0 }}
+                            </div>
                             <div class="stat-label">Отменено</div>
                         </div>
                     </div>
@@ -251,6 +257,16 @@
     font-size: 0.8rem;
     color: var(--text-secondary);
     margin-top: 0.2rem;
+}
+
+.today-badge-small {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-top: 0.3rem;
+    display: inline-block;
 }
 
 .booking-info {
@@ -517,7 +533,7 @@ function checkEmptyBookings() {
     }
 }
 
-// Функция для получения CSRF токена (должна быть в base.html или здесь)
+// Функция для получения CSRF токена
 function getCSRFToken() {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {

@@ -216,21 +216,82 @@ def profile_view(request):
         return HttpResponseForbidden()
 
     tab = request.GET.get('tab', 'bookings')
+    today = timezone.now().date()
+    now = timezone.now()
 
-    # Активные записи (только будущие)
+    # ПРОСТАЯ ЛОГИКА: если время занятия прошло - перемещаем в историю
     active_bookings = Booking.objects.filter(
         client=request.user,
         status='booked'
-    ).select_related('schedule', 'schedule__dance_style', 'schedule__trainer', 'schedule__trainer__user').order_by(
-        'schedule__start_date', 'schedule__start_time')
+    ).select_related('schedule')
 
-    # История посещений (завершенные и отмененные занятия)
+    for booking in active_bookings:
+        # Проверяем ближайшее занятие
+        upcoming_dates = booking.schedule.get_upcoming_dates(weeks=1)
+        has_future = False
+
+        for class_date in upcoming_dates:
+            class_time = datetime.combine(class_date, booking.schedule.start_time)
+            class_datetime = timezone.make_aware(class_time)
+
+            if class_datetime > now:
+                has_future = True
+                break
+
+        if not has_future and upcoming_dates:
+            # Если нет будущих занятий в ближайшую неделю - считаем прошедшим
+            booking.status = 'missed'
+            booking.save()
+
+    # Теперь получаем обновленные данные
+    active_bookings_list = []
+    active_bookings_updated = Booking.objects.filter(
+        client=request.user,
+        status='booked'
+    ).select_related('schedule', 'schedule__dance_style', 'schedule__trainer', 'schedule__trainer__user')
+
+    for booking in active_bookings_updated:
+        upcoming_dates = booking.schedule.get_upcoming_dates(weeks=8)
+        if upcoming_dates:
+            for class_date in upcoming_dates:
+                class_time = datetime.combine(class_date, booking.schedule.start_time)
+                class_datetime = timezone.make_aware(class_time)
+                if class_datetime > now:
+                    active_bookings_list.append({
+                        'booking': booking,
+                        'class_date': class_date,
+                        'schedule': booking.schedule
+                    })
+                    break
+
+    active_bookings_list.sort(key=lambda x: x['class_date'])
+
+    # История - все неактивные записи
     history_bookings = Booking.objects.filter(
         client=request.user
     ).exclude(status='booked').select_related('schedule', 'schedule__dance_style', 'schedule__trainer',
-                                              'schedule__trainer__user').order_by('-booking_date')
+                                              'schedule__trainer__user')
 
-    # Обработка формы настроек профиля
+    history_list = []
+    for booking in history_bookings:
+        # Для истории используем дату из расписания или дату записи
+        upcoming_dates = booking.schedule.get_upcoming_dates(weeks=52)
+        class_date = booking.booking_date.date()
+
+        if upcoming_dates:
+            past_dates = [d for d in upcoming_dates if d <= today]
+            if past_dates:
+                class_date = max(past_dates)
+
+        history_list.append({
+            'booking': booking,
+            'class_date': class_date,
+            'schedule': booking.schedule
+        })
+
+    history_list.sort(key=lambda x: x['class_date'], reverse=True)
+
+    # Обработка формы настроек
     if request.method == 'POST' and tab == 'settings':
         user = request.user
         user.first_name = request.POST.get('first_name', user.first_name)
@@ -243,15 +304,17 @@ def profile_view(request):
             user.birth_date = birth_date
 
         user.save()
-        # Можно добавить сообщение об успехе
 
     context = {
         'tab': tab,
-        'active_bookings': active_bookings,
-        'history_bookings': history_bookings
+        'active_bookings': active_bookings_list,
+        'history_bookings': history_list,
+        'today': today
     }
 
     return render(request, 'main/profile.html', context)
+
+
 
 @csrf_exempt
 @login_required
