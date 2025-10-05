@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 @csrf_exempt
 @login_required
 def book_class(request, schedule_id):
+    if not request.user.is_client():
+        return JsonResponse({'success': False, 'error': 'Только клиенты могут записываться на занятия'})
     print("=== BOOKING DEBUG ===")
     print(f"Method: {request.method}")
     print(f"User: {request.user} (id: {request.user.id})")
@@ -22,10 +24,10 @@ def book_class(request, schedule_id):
     print(f"Authenticated: {request.user.is_authenticated}")
 
     try:
-        # Проверяем роль пользователя
+        # Проверяем роль пользователя - ЗАПРЕЩАЕМ админам и преподавателям записываться
         if request.user.role != 'client':
             print("❌ User is not a client")
-            return JsonResponse({'success': False, 'error': 'Только клиенты могут записываться'})
+            return JsonResponse({'success': False, 'error': 'Только клиенты могут записываться на занятия'})
 
         # Получаем расписание
         schedule = Schedule.objects.get(id=schedule_id)
@@ -53,7 +55,7 @@ def book_class(request, schedule_id):
             client=request.user,
             schedule=schedule,
             status='booked',
-            class_date=class_date  # ДОБАВЛЯЕМ дату занятия
+            class_date=class_date
         )
         print(f"✅ Booking created successfully: {booking.id}")
         print(f"✅ Class date: {class_date}")
@@ -69,9 +71,15 @@ def book_class(request, schedule_id):
         print(traceback.format_exc())
         return JsonResponse({'success': False, 'error': f'Внутренняя ошибка сервера: {str(e)}'})
 
-
 # Главная страница
 def home_view(request):
+    if request.user.is_authenticated:
+        if request.user.is_client():
+            return redirect('schedule')
+        elif request.user.is_trainer():
+            return redirect('trainer_profile')
+        elif request.user.is_admin():
+            return redirect('/admin/')
     return render(request, 'main/home.html')
 
 
@@ -189,19 +197,35 @@ def schedule_view(request):
 
 
 # Регистрация
+@csrf_exempt 
 def signup_view(request):
+    print("=== SIGNUP DEBUG ===")
+    print(f"Method: {request.method}")
+    print(f"User: {request.user}")
+    print(f"Authenticated: {request.user.is_authenticated}")
+    
     if request.method == 'POST':
-        # Создаем форму с данными из POST-запроса
+        print("POST data:", request.POST)
+        print("CSRF token present:", 'csrfmiddlewaretoken' in request.POST)
+        
         form = CustomUserCreationForm(request.POST)
+        print("Form is valid:", form.is_valid())
+        
         if form.is_valid():
-            user = form.save()
-            # Автоматически входим после регистрации
+            print("Form is valid - creating user")
+            user = form.save(commit=False)
+            user.role = 'client'
+            user.save()
+            
             login(request, user)
             return redirect('home')
+        else:
+            print("Form errors:", form.errors)
     else:
         form = CustomUserCreationForm()
 
     return render(request, 'main/signup.html', {'form': form})
+
 
 
 # Вход
@@ -227,7 +251,11 @@ def logout_view(request):
 # Личный кабинет клиента
 @login_required
 def profile_view(request):
-    if request.user.role != 'client':
+    if not request.user.is_client():
+        if request.user.is_trainer():
+            return redirect('trainer_profile')
+        elif request.user.is_admin():
+            return redirect('/admin/')
         return HttpResponseForbidden()
 
     tab = request.GET.get('tab', 'bookings')
@@ -394,3 +422,165 @@ def cancel_booking(request, booking_id):
         print("Traceback:")
         print(traceback.format_exc())
         return JsonResponse({'success': False, 'error': f'Внутренняя ошибка сервера: {str(e)}'})
+
+
+
+# Личный кабинет хореографа
+@login_required
+def trainer_profile_view(request):
+    if not request.user.is_trainer():
+        return HttpResponseForbidden()
+    
+    tab = request.GET.get('tab', 'schedule')
+    
+    # Получаем профиль преподавателя
+    try:
+        trainer_profile = request.user.trainer_profile
+    except Trainer.DoesNotExist:
+        return HttpResponseForbidden()
+
+    # Обработка формы редактирования профиля
+    if request.method == 'POST' and tab == 'settings':
+        user = request.user
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.email = request.POST.get('email', user.email)
+        user.phone = request.POST.get('phone', user.phone)
+        
+        trainer_profile.bio = request.POST.get('bio', trainer_profile.bio)
+        
+        birth_date = request.POST.get('birth_date')
+        if birth_date:
+            user.birth_date = birth_date
+            
+        user.save()
+        trainer_profile.save()
+
+    # Расписание преподавателя
+    trainer_schedules = Schedule.objects.filter(
+        trainer=trainer_profile, 
+        is_active=True
+    ).order_by('day_of_week', 'start_time')
+
+    # История занятий преподавателя
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    
+    # Все занятия преподавателя (для истории)
+    all_trainer_classes = []
+    for schedule in trainer_schedules:
+        # Получаем даты занятий за последние 30 дней
+        start_date = today - timedelta(days=30)
+        current_date = start_date
+        while current_date <= today:
+            if current_date.weekday() == schedule.day_of_week:
+                if schedule.start_date <= current_date and (schedule.end_date is None or current_date <= schedule.end_date):
+                    # Находим записи на это занятие
+                    bookings = Booking.objects.filter(schedule=schedule, class_date=current_date)
+                    # Определяем статус занятия
+                    status = get_class_status(bookings) if bookings.exists() else 'not_held'
+                    all_trainer_classes.append({
+                        'schedule': schedule,
+                        'date': current_date,
+                        'bookings': bookings,
+                        'status': status
+                    })
+            current_date += timedelta(days=1)
+    
+    # Сортируем по дате (новые сверху)
+    all_trainer_classes.sort(key=lambda x: x['date'], reverse=True)
+
+    # Занятия для отметки (последние 7 дней)
+    classes_to_mark = []
+    for schedule in trainer_schedules:
+        for i in range(7):
+            class_date = today - timedelta(days=i)
+            if class_date.weekday() == schedule.day_of_week:
+                if schedule.start_date <= class_date and (schedule.end_date is None or class_date <= schedule.end_date):
+                    bookings = Booking.objects.filter(schedule=schedule, class_date=class_date)
+                    if bookings.exists():
+                        status = get_class_status(bookings)
+                        classes_to_mark.append({
+                            'schedule': schedule,
+                            'date': class_date,
+                            'bookings': bookings,
+                            'status': status
+                        })
+
+    context = {
+        'tab': tab,
+        'trainer_profile': trainer_profile,
+        'trainer_schedules': trainer_schedules,
+        'classes_to_mark': classes_to_mark,
+        'all_trainer_classes': all_trainer_classes,
+        'today': today,
+    }
+    
+    return render(request, 'main/trainer_profile.html', context)
+
+# Вспомогательная функция для определения статуса занятия
+def get_class_status(bookings):
+    if not bookings.exists():
+        return 'not_held'
+    
+    statuses = set(booking.status for booking in bookings)
+    
+    if 'attended' in statuses:
+        return 'attended'
+    elif 'cancelled' in statuses:
+        return 'cancelled'
+    elif 'missed' in statuses:
+        return 'missed'
+    else:
+        return 'scheduled'
+
+
+
+# Отметить занятие как проведенное
+@csrf_exempt
+@login_required
+def mark_class_attended(request, schedule_id, class_date):
+    if not request.user.is_trainer():
+        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+    
+    try:
+        trainer_profile = request.user.trainer_profile
+        schedule = Schedule.objects.get(id=schedule_id, trainer=trainer_profile)
+        
+        # Находим все записи на это занятие
+        bookings = Booking.objects.filter(schedule=schedule, class_date=class_date)
+        
+        # Меняем статус на 'attended'
+        updated_count = bookings.update(status='attended')
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Занятие отмечено как проведенное. Обновлено записей: {updated_count}'
+        })
+        
+    except (Schedule.DoesNotExist, Trainer.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'Занятие не найдено'})
+
+# Отметить занятие как отмененное
+@csrf_exempt
+@login_required
+def mark_class_cancelled(request, schedule_id, class_date):
+    if not request.user.is_trainer():
+        return JsonResponse({'success': False, 'error': 'Доступ запрещен'})
+    
+    try:
+        trainer_profile = request.user.trainer_profile
+        schedule = Schedule.objects.get(id=schedule_id, trainer=trainer_profile)
+        
+        bookings = Booking.objects.filter(schedule=schedule, class_date=class_date)
+        updated_count = bookings.update(status='cancelled')
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Занятие отмечено как отмененное. Обновлено записей: {updated_count}'
+        })
+        
+    except (Schedule.DoesNotExist, Trainer.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'Занятие не найдено'})
+
+

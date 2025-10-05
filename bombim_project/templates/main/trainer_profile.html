@@ -1,0 +1,405 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Кабинет хореографа - Bombim{% endblock %}
+
+{% block content %}
+<section class="mt-5">
+    <h1 class="text-center">Кабинет хореографа</h1>
+    <p class="text-center" style="color: var(--text-secondary); margin-bottom: 2rem;">
+        Добро пожаловать, {{ user.first_name }} {{ user.last_name }}!
+    </p>
+
+    <!-- Навигация по вкладкам -->
+    <div class="card">
+        <div style="display: flex; border-bottom: 1px solid var(--bg-secondary); flex-wrap: wrap;">
+            <a href="?tab=schedule" class="tab-link {% if tab == 'schedule' %}active{% endif %}">
+                <i class="fas fa-calendar-alt"></i> Мое расписание
+            </a>
+            <a href="?tab=mark" class="tab-link {% if tab == 'mark' %}active{% endif %}">
+                <i class="fas fa-check-circle"></i> Отметить занятия
+            </a>
+            <a href="?tab=history" class="tab-link {% if tab == 'history' %}active{% endif %}">
+                <i class="fas fa-history"></i> История занятий
+            </a>
+            <a href="?tab=settings" class="tab-link {% if tab == 'settings' %}active{% endif %}">
+                <i class="fas fa-cog"></i> Настройки
+            </a>
+        </div>
+
+        <div class="tab-content">
+            <!-- Расписание -->
+            {% if tab == 'schedule' %}
+            <div class="mt-3">
+                <h3>Мое расписание на неделю</h3>
+                {% if trainer_schedules %}
+                <div class="schedule-table">
+                    {% for schedule in trainer_schedules %}
+                    <div class="schedule-item">
+                        <div class="schedule-day">
+                            <strong>{{ schedule.get_day_of_week_display }}</strong>
+                        </div>
+                        <div class="schedule-time">
+                            {{ schedule.start_time }} - {{ schedule.end_time }}
+                        </div>
+                        <div class="schedule-style">
+                            <strong>{{ schedule.dance_style.name }}</strong>
+                        </div>
+                        <div class="schedule-info">
+                            Макс. участников: {{ schedule.max_participants }}
+                        </div>
+                        <div class="schedule-status">
+                            <span class="status-badge {% if schedule.is_active %}active{% else %}inactive{% endif %}">
+                                {{ schedule.is_active|yesno:"Активно,Неактивно" }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center" style="padding: 3rem;">
+                    <i class="fas fa-calendar-times fa-4x" style="color: var(--accent-secondary);"></i>
+                    <h4>Расписание не настроено</h4>
+                    <p style="color: var(--text-secondary);">
+                        Обратитесь к администратору для настройки расписания
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Отметка занятий -->
+            {% elif tab == 'mark' %}
+            <div class="mt-3">
+                <h3>Отметить проведенные занятия</h3>
+                {% if classes_to_mark %}
+                <div class="classes-table">
+                    {% for class_info in classes_to_mark %}
+                    <div class="class-item">
+                        <div class="class-date">
+                            <strong>{{ class_info.date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">{{ class_info.schedule.get_day_of_week_display }}</div>
+                        </div>
+                        <div class="class-time">
+                            {{ class_info.schedule.start_time }} - {{ class_info.schedule.end_time }}
+                        </div>
+                        <div class="class-style">
+                            {{ class_info.schedule.dance_style.name }}
+                        </div>
+                        <div class="class-participants">
+                            Записалось: {{ class_info.bookings.count }}
+                        </div>
+                        <div class="class-status">
+                            {% if class_info.status == 'attended' %}
+                                <span class="status-badge attended">Проведено</span>
+                            {% elif class_info.status == 'cancelled' %}
+                                <span class="status-badge cancelled">Отменено</span>
+                            {% else %}
+                                <span class="status-badge scheduled">Запланировано</span>
+                            {% endif %}
+                        </div>
+                        <div class="class-actions">
+                            {% if class_info.status != 'attended' %}
+                                <button class="btn btn-success btn-sm"
+                                        onclick="markClassAttended({{ class_info.schedule.id }}, '{{ class_info.date|date:"Y-m-d" }}', this)">
+                                    <i class="fas fa-check"></i> Проведено
+                                </button>
+                            {% endif %}
+                            {% if class_info.status != 'cancelled' %}
+                                <button class="btn btn-warning btn-sm"
+                                        onclick="markClassCancelled({{ class_info.schedule.id }}, '{{ class_info.date|date:"Y-m-d" }}', this)">
+                                    <i class="fas fa-times"></i> Отменить
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center" style="padding: 3rem;">
+                    <i class="fas fa-check-circle fa-4x" style="color: var(--accent-primary);"></i>
+                    <h4>Нет занятий для отметки</h4>
+                    <p style="color: var(--text-secondary);">
+                        Все занятия отмечены или еще не прошло время для отметки
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- История занятий -->
+            {% elif tab == 'history' %}
+            <div class="mt-3">
+                <h3>История моих занятий</h3>
+                {% if all_trainer_classes %}
+                <div class="classes-table">
+                    {% for class_info in all_trainer_classes %}
+                    <div class="class-item history-item">
+                        <div class="class-date">
+                            <strong>{{ class_info.date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">{{ class_info.schedule.get_day_of_week_display }}</div>
+                        </div>
+                        <div class="class-time">
+                            {{ class_info.schedule.start_time }} - {{ class_info.schedule.end_time }}
+                        </div>
+                        <div class="class-style">
+                            {{ class_info.schedule.dance_style.name }}
+                        </div>
+                        <div class="class-participants">
+                            Участников: {{ class_info.bookings.count }}
+                        </div>
+                        <div class="class-status">
+                            {% if class_info.status == 'attended' %}
+                                <span class="status-badge attended">Проведено</span>
+                            {% elif class_info.status == 'cancelled' %}
+                                <span class="status-badge cancelled">Отменено</span>
+                            {% elif class_info.status == 'missed' %}
+                                <span class="status-badge missed">Пропущено</span>
+                            {% else %}
+                                <span class="status-badge not-held">Не состоялось</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center" style="padding: 3rem;">
+                    <i class="fas fa-history fa-4x" style="color: var(--accent-secondary);"></i>
+                    <h4>История занятий пуста</h4>
+                    <p style="color: var(--text-secondary);">
+                        Здесь будет отображаться история всех ваших занятий
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Настройки профиля -->
+            {% elif tab == 'settings' %}
+            <div class="mt-3">
+                <h3>Настройки профиля</h3>
+                <form method="post" class="profile-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="tab" value="settings">
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Имя:</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Фамилия:</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" name="email" class="form-control" placeholder="example@mail.ru" value="{{ form.email.value|default:'' }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Телефон:</label>
+                            <input type="tel" name="phone" class="form-control" placeholder="+7 (999) 123-45-67" value="{{ form.email.value|default:'' }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Дата рождения:</label>
+                            <input type="date" name="birth_date" class="form-control" value="{{ user.birth_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">О себе (биография):</label>
+                            <textarea name="bio" class="form-control" rows="4">{{ trainer_profile.bio }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Роль:</label>
+                            <input type="text" class="form-control" value="{{ user.get_role_display }}" disabled style="background: var(--bg-secondary);">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--bg-secondary);">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<style>
+.schedule-table, .classes-table {
+    margin-top: 1rem;
+}
+
+.schedule-item, .class-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.5fr 1fr auto auto;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--bg-secondary);
+    align-items: center;
+}
+
+.schedule-item:last-child, .class-item:last-child {
+    border-bottom: none;
+}
+
+.schedule-day .day-name, .class-date .day-name {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+.status-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    display: inline-block;
+}
+
+.status-badge.active {
+    background: rgba(0, 204, 153, 0.2);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.status-badge.inactive {
+    background: rgba(255, 77, 77, 0.2);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+.status-badge.attended {
+    background: rgba(0, 204, 153, 0.2);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.status-badge.cancelled {
+    background: rgba(255, 204, 0, 0.2);
+    color: var(--warning);
+    border: 1px solid var(--warning);
+}
+
+.status-badge.missed {
+    background: rgba(255, 77, 77, 0.2);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+}
+
+.status-badge.scheduled {
+    background: rgba(77, 77, 255, 0.2);
+    color: var(--accent-secondary);
+    border: 1px solid var(--accent-secondary);
+}
+
+.status-badge.not-held {
+    background: rgba(128, 128, 128, 0.2);
+    color: var(--text-secondary);
+    border: 1px solid var(--text-secondary);
+}
+
+.history-item {
+    opacity: 0.8;
+}
+
+.history-item:hover {
+    opacity: 1;
+}
+
+.class-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 1024px) {
+    .schedule-item, .class-item {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .schedule-status, .class-status, .class-actions {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .schedule-item, .class-item {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 0.8rem;
+    }
+
+    .class-actions {
+        justify-content: center;
+    }
+}
+</style>
+
+<script>
+function markClassAttended(scheduleId, classDate, button) {
+    if (!confirm('Отметить занятие как проведенное?')) return;
+    
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    const csrfToken = getCSRFToken();
+    
+    fetch(`/mark-class-attended/${scheduleId}/${classDate}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('❌ ' + data.error);
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+    });
+}
+
+function markClassCancelled(scheduleId, classDate, button) {
+    if (!confirm('Отметить занятие как отмененное?')) return;
+    
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    const csrfToken = getCSRFToken();
+    
+    fetch(`/mark-class-cancelled/${scheduleId}/${classDate}/`, {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('❌ ' + data.error);
+            button.disabled = false;
+            button.innerHTML = originalText;
+        }
+    });
+}
+
+// Функция для получения CSRF токена
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 'csrftoken'.length + 1) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -22,6 +22,15 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
+    def is_client(self):
+        return self.role == 'client'
+    
+    def is_trainer(self):
+        return self.role == 'trainer'
+    
+    def is_admin(self):
+        return self.role == 'admin' or self.is_staff
+
 
 class DanceStyle(models.Model):
     name = models.CharField(max_length=100)

@@ -3,105 +3,263 @@
 {% block title %}Регистрация - Bombim{% endblock %}
 
 {% block content %}
-<div class="auth-form">
-    <h2 class="text-center">Регистрация</h2>
-    
-    {% if form.errors %}
-    <div class="alert alert-error">
-        <i class="fas fa-exclamation-circle"></i>
-        Пожалуйста, исправьте ошибки ниже.
-        {% for field, errors in form.errors.items %}
-            {% for error in errors %}
-                <br>{{ error }}
-            {% endfor %}
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <form method="post">
-        {% csrf_token %}
-
-        <!-- ДОБАВИТЬ это поле в форму: -->
-<div class="form-group">
-    <label class="form-label">Имя пользователя (username):</label>
-    {{ form.username }}
-    {% if form.username.errors %}
-        <div style="color: var(--danger); font-size: 0.9rem;">
-            {% for error in form.username.errors %}
-                {{ error }}
-            {% endfor %}
-        </div>
-    {% endif %}
-</div>
-
-        <div class="form-group">
-            <label class="form-label">Имя:</label>
-            {{ form.first_name }}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Фамилия:</label>
-            {{ form.last_name }}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Email:</label>
-            {{ form.email }}
-            {% if form.email.errors %}
-                <div style="color: var(--danger); font-size: 0.9rem;">
-                    {% for error in form.email.errors %}
-                        {{ error }}
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Телефон:</label>
-            {{ form.phone }}
-            {% if form.phone.errors %}
-                <div style="color: var(--danger); font-size: 0.9rem;">
-                    {% for error in form.phone.errors %}
-                        {{ error }}
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Дата рождения:</label>
-            {{ form.birth_date }}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Пароль:</label>
-            {{ form.password1 }}
-            {% if form.password1.errors %}
-                <div style="color: var(--danger); font-size: 0.9rem;">
-                    {% for error in form.password1.errors %}
-                        {{ error }}
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Подтверждение пароля:</label>
-            {{ form.password2 }}
-            {% if form.password2.errors %}
-                <div style="color: var(--danger); font-size: 0.9rem;">
-                    {% for error in form.password2.errors %}
-                        {{ error }}
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
+<div class="auth-container">
+    <div class="auth-form">
+        <h2 class="text-center">Регистрация</h2>
         
-        <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
-    </form>
-    
-    <p class="text-center mt-3">
-        Уже есть аккаунт? <a href="{% url 'login' %}" style="color: var(--accent-primary);">Войти</a>
-    </p>
+        {% if form.errors %}
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            Пожалуйста, исправьте ошибки ниже.
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}
+                    <div class="error-item">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" id="signup-form">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label">Имя пользователя (логин):</label>
+                {{ form.username }}
+                <div class="form-help">Только латинские буквы, цифры и _</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Имя:</label>
+                {{ form.first_name }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Фамилия:</label>
+                {{ form.last_name }}
+            </div>
+
+            <div class="form-group">
+    <label class="form-label">Email:</label>
+    {{ form.email }}
+    <div class="form-help">Любой валидный email адрес</div>  <!-- ИЗМЕНИЛИ -->
 </div>
+
+            <div class="form-group">
+    <label class="form-label">Телефон:</label>
+    {{ form.phone }}
+    <div class="form-help">Любой формат: +79991234567, 89991234567, 9991234567</div>
+
+            <div class="form-group">
+                <label class="form-label">Дата рождения:</label>
+                {{ form.birth_date }}
+                <div class="form-help">Минимальный возраст - 10 лет</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Пароль:</label>
+                {{ form.password1 }}
+                <div class="form-help">Минимум 8 символов, буквы и цифры</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Подтверждение пароля:</label>
+                {{ form.password2 }}
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100" id="submit-btn">
+                <i class="fas fa-user-plus"></i> Зарегистрироваться
+            </button>
+        </form>
+        
+        <p class="text-center mt-3">
+            Уже есть аккаунт? <a href="{% url 'login' %}" style="color: var(--accent-primary);">Войти</a>
+        </p>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.auth-form {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--bg-secondary);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-primary);
+}
+
+.form-help {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+}
+
+.alert-error {
+    background: rgba(255, 77, 77, 0.1);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.error-item {
+    margin-top: 0.3rem;
+    font-size: 0.9rem;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-3 {
+    margin-top: 1rem;
+}
+
+/* Стили для валидации в реальном времени */
+.form-control.error {
+    border-color: var(--danger);
+}
+
+.form-control.success {
+    border-color: var(--success);
+}
+
+.password-strength {
+    height: 4px;
+    background: var(--bg-secondary);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.strength-weak { background: var(--danger); width: 25%; }
+.strength-medium { background: var(--warning); width: 50%; }
+.strength-strong { background: var(--success); width: 75%; }
+.strength-very-strong { background: var(--success); width: 100%; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('signup-form');
+    const submitBtn = document.getElementById('submit-btn');
+    
+// Валидация телефона в реальном времени
+const phoneInput = document.querySelector('input[name="phone"]');
+if (phoneInput) {
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value;
+        
+        // Разрешаем любые символы, но подсвечиваем только цифры и +
+        let cleanValue = value.replace(/[^\d+]/g, '');
+        
+        // Автоматически добавляем +7 если начинается с 7 или 8
+        if (cleanValue.startsWith('7') && !cleanValue.startsWith('+7')) {
+            cleanValue = '+' + cleanValue;
+        } else if (cleanValue.startsWith('8') && cleanValue.length === 1) {
+            cleanValue = '+7';
+        }
+        
+        // Ограничиваем длину
+        if (cleanValue.length > 12) {
+            cleanValue = cleanValue.substring(0, 12);
+        }
+        
+        e.target.value = cleanValue;
+    });
+    
+    // Показываем пример при фокусе
+    phoneInput.addEventListener('focus', function() {
+        if (!this.value) {
+            this.placeholder = 'Например: +79991234567';
+        }
+    });
+    
+    phoneInput.addEventListener('blur', function() {
+        this.placeholder = '';
+    });
+}
+
+
+    // Валидация пароля в реальном времени
+    const passwordInput = document.querySelector('input[name="password1"]');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function(e) {
+            checkPasswordStrength(e.target.value);
+        });
+    }
+    
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        
+        if (password.length >= 8) strength++;
+        if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+        if (password.match(/\d/)) strength++;
+        if (password.match(/[^a-zA-Z\d]/)) strength++;
+        
+        // Убираем старые индикаторы
+        const oldIndicator = document.querySelector('.password-strength');
+        if (oldIndicator) oldIndicator.remove();
+        
+        // Создаем новый индикатор
+        if (password.length > 0) {
+            const indicator = document.createElement('div');
+            indicator.className = 'password-strength';
+            
+            if (strength < 2) {
+                indicator.classList.add('strength-weak');
+            } else if (strength < 3) {
+                indicator.classList.add('strength-medium');
+            } else if (strength < 4) {
+                indicator.classList.add('strength-strong');
+            } else {
+                indicator.classList.add('strength-very-strong');
+            }
+            
+            passwordInput.parentNode.appendChild(indicator);
+        }
+    }
+    
+    // Предотвращение двойной отправки формы
+    form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Регистрируем...';
+    });
+});
+</script>
 {% endblock %}

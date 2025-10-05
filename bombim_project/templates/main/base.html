@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Bombim - Студия танцев{% endblock %}</title>
-    <!-- Добавьте в head section base.html -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💃</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
     {% load static %}
-    <!-- Добавьте в head section -->
+
 <meta name="csrf-token" content="{{ csrf_token }}">
 
 
@@ -363,17 +362,23 @@
         <div class="nav-container">
             <a href="{% url 'home' %}" class="logo">Bombim</a>
             <ul class="nav-links">
-                <li><a href="{% url 'styles' %}">Направления</a></li>
-                <li><a href="{% url 'trainers' %}">Преподаватели</a></li>
-                <li><a href="{% url 'schedule' %}">Расписание</a></li>
-                {% if user.is_authenticated %}
-                    <li><a href="{% url 'profile' %}">Профиль</a></li>
-                    <li><a href="{% url 'logout' %}">Выйти</a></li>
-                {% else %}
-                    <li><a href="{% url 'login' %}">Войти</a></li>
-                    <li><a href="{% url 'signup' %}">Регистрация</a></li>
-                {% endif %}
-            </ul>
+    <li><a href="{% url 'styles' %}">Направления</a></li>
+    <li><a href="{% url 'trainers' %}">Преподаватели</a></li>
+    <li><a href="{% url 'schedule' %}">Расписание</a></li>
+    {% if user.is_authenticated %}
+        {% if user.is_client %}
+            <li><a href="{% url 'profile' %}">Профиль</a></li>
+        {% elif user.is_trainer %}
+            <li><a href="{% url 'trainer_profile' %}">Мои занятия</a></li>
+        {% elif user.is_admin %}
+            <li><a href="/admin/">Админка</a></li>
+        {% endif %}
+        <li><a href="{% url 'logout' %}">Выйти</a></li>
+    {% else %}
+        <li><a href="{% url 'login' %}">Войти</a></li>
+        <li><a href="{% url 'signup' %}">Регистрация</a></li>
+    {% endif %}
+</ul>
         </div>
     </nav>
 
