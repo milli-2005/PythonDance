@@ -30,11 +30,9 @@
                 <h3>Мои предстоящие занятия</h3>
                 {% if active_bookings %}
                 <div class="bookings-table">
-                    {% for item in active_bookings %}
+                    {% for booking in active_bookings %}
                     <div class="booking-item">
                         <div class="booking-date">
-<<<<<<< HEAD
-                            <!-- ИСПОЛЬЗУЕМ class_date вместо schedule.start_date -->
                             <strong>{{ booking.class_date|date:"d.m.Y" }}</strong>
                             <div class="day-name">
                                 {% if booking.class_date.weekday == 0 %}Понедельник
@@ -46,41 +44,25 @@
                                 {% elif booking.class_date.weekday == 6 %}Воскресенье
                                 {% endif %}
                             </div>
-=======
-                            <strong>{{ item.class_date|date:"d.m.Y" }}</strong>
-                            <div class="day-name">{{ item.schedule.get_day_of_week_display }}</div>
-                            {% if item.class_date == today %}
-                            <div class="today-badge-small">Сегодня</div>
-                            {% endif %}
->>>>>>> 1d0217181188c12af7bee066f853a998195efdb2
                         </div>
                         <div class="booking-time">
-                            {{ item.schedule.start_time }} - {{ item.schedule.end_time }}
+                            {{ booking.schedule.start_time }} - {{ booking.schedule.end_time }}
                         </div>
                         <div class="booking-style">
-                            <strong>{{ item.schedule.dance_style.name }}</strong>
+                            <strong>{{ booking.schedule.dance_style.name }}</strong>
                         </div>
                         <div class="booking-trainer">
-                            <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
+                            <i class="fas fa-user"></i> {{ booking.schedule.trainer.user.get_full_name }}
                         </div>
                         <div class="booking-status">
                             <span class="status-badge booked">Записан</span>
                         </div>
                         <div class="booking-actions">
-<<<<<<< HEAD
-    {% if booking.status == 'missed' %}
-        <button class="btn btn-outline btn-sm" onclick="markAsAttended({{ booking.id }})">
-            Отметить как посещенное
-        </button>
-    {% endif %}
-</div>
-=======
                             <button class="btn btn-outline"
-                                    onclick="cancelBooking({{ item.booking.id }}, this)">
+                                    onclick="cancelBooking({{ booking.id }}, this)">
                                 Отменить запись
                             </button>
                         </div>
->>>>>>> 1d0217181188c12af7bee066f853a998195efdb2
                     </div>
                     {% endfor %}
                 </div>
@@ -104,38 +86,38 @@
                 <h3>История моих занятий</h3>
                 {% if history_bookings %}
                 <div class="bookings-table">
-                    {% for item in history_bookings %}
+                    {% for booking in history_bookings %}
                     <div class="booking-item history-item">
                         <div class="booking-date">
-                            <strong>{{ item.class_date|date:"d.m.Y" }}</strong>
-                            <div class="day-name">Дата занятия</div>
+                            <strong>{{ booking.class_date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">
+                                {% if booking.class_date.weekday == 0 %}Понедельник
+                                {% elif booking.class_date.weekday == 1 %}Вторник
+                                {% elif booking.class_date.weekday == 2 %}Среда
+                                {% elif booking.class_date.weekday == 3 %}Четверг
+                                {% elif booking.class_date.weekday == 4 %}Пятница
+                                {% elif booking.class_date.weekday == 5 %}Суббота
+                                {% elif booking.class_date.weekday == 6 %}Воскресенье
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="booking-info">
                             <div class="booking-datetime">
-<<<<<<< HEAD
-                                {% if booking.class_date %}
-                                    {{ booking.class_date|date:"d.m.Y" }}
-                                {% else %}
-                                    {{ booking.booking_date|date:"d.m.Y" }}
-                                {% endif %}
-                                • {{ booking.schedule.start_time }}
+                                {{ booking.class_date|date:"d.m.Y" }} • {{ booking.schedule.start_time }}
                             </div>
                             <div class="booking-style">
                                 {{ booking.schedule.dance_style.name }}
-=======
-                                {{ item.schedule.start_time }} • {{ item.schedule.dance_style.name }}
->>>>>>> 1d0217181188c12af7bee066f853a998195efdb2
                             </div>
                             <div class="booking-trainer">
-                                <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
+                                <i class="fas fa-user"></i> {{ booking.schedule.trainer.user.get_full_name }}
                             </div>
                         </div>
                         <div class="booking-status">
-                            {% if item.booking.status == 'attended' %}
+                            {% if booking.status == 'attended' %}
                                 <span class="status-badge attended">Посещено</span>
-                            {% elif item.booking.status == 'missed' %}
+                            {% elif booking.status == 'missed' %}
                                 <span class="status-badge missed">Не пришел</span>
-                            {% elif item.booking.status == 'cancelled' %}
+                            {% elif booking.status == 'cancelled' %}
                                 <span class="status-badge cancelled">Отменено</span>
                             {% endif %}
                         </div>
@@ -144,31 +126,27 @@
                 </div>
 
                 <!-- Статистика -->
-<div class="stats-card">
-    <h4>Статистика посещений</h4>
-    <div class="stats-grid">
-        <div class="stat-item">
-            <div class="stat-number">{{ stats.total }}</div>
-            <div class="stat-label">Всего в истории</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-number">{{ stats.attended }}</div>
-            <div class="stat-label">Посещено</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-number">{{ stats.missed }}</div>
-            <div class="stat-label">Пропущено</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-number">{{ stats.cancelled }}</div>
-            <div class="stat-label">Отменено</div>
-        </div>
-    </div>
-</div>
-
-
-                
-
+                <div class="stats-card">
+                    <h4>Статистика посещений</h4>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ stats.total }}</div>
+                            <div class="stat-label">Всего в истории</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ stats.attended }}</div>
+                            <div class="stat-label">Посещено</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ stats.missed }}</div>
+                            <div class="stat-label">Пропущено</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ stats.cancelled }}</div>
+                            <div class="stat-label">Отменено</div>
+                        </div>
+                    </div>
+                </div>
                 {% else %}
                 <div class="text-center" style="padding: 3rem;">
                     <i class="fas fa-clipboard-list fa-4x" style="color: var(--accent-secondary); margin-bottom: 1rem;"></i>
@@ -291,16 +269,6 @@
     font-size: 0.8rem;
     color: var(--text-secondary);
     margin-top: 0.2rem;
-}
-
-.today-badge-small {
-    background: var(--accent-primary);
-    color: white;
-    padding: 0.2rem 0.5rem;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    margin-top: 0.3rem;
-    display: inline-block;
 }
 
 .booking-info {
@@ -566,25 +534,6 @@ function checkEmptyBookings() {
         `;
     }
 }
-
-function markAsAttended(bookingId) {
-    if (!confirm('Отметить занятие как посещенное?')) return;
-    
-    const csrfToken = getCSRFToken();
-    fetch(`/mark-attended/${bookingId}/`, {
-        method: 'POST',
-        headers: {'X-CSRFToken': csrfToken},
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Ошибка: ' + data.error);
-        }
-    });
-}
-
 
 // Функция для получения CSRF токена
 function getCSRFToken() {
