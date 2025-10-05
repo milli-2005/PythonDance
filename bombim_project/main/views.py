@@ -232,19 +232,21 @@ def profile_view(request):
 
     tab = request.GET.get('tab', 'bookings')
 
-    # Активные записи (только будущие)
+    # Активные записи - ВСЕ записи со статусом 'booked'
     active_bookings = Booking.objects.filter(
         client=request.user,
-        status='booked',
-        class_date__gte=timezone.now().date()  # только будущие занятия
+        status='booked'
     ).select_related('schedule', 'schedule__dance_style', 'schedule__trainer', 'schedule__trainer__user').order_by(
         'class_date', 'schedule__start_time')
 
-    # История посещений (завершенные и отмененные занятия)
+    # История посещений - записи с другими статусами
     history_bookings = Booking.objects.filter(
         client=request.user
     ).exclude(status='booked').select_related('schedule', 'schedule__dance_style', 'schedule__trainer',
-                                              'schedule__trainer__user').order_by('-booking_date')
+                                              'schedule__trainer__user').order_by('-class_date')
+
+    # Отладочная информация
+    print(f"PROFILE DEBUG: User {request.user.id}, Active bookings: {active_bookings.count()}, History bookings: {history_bookings.count()}")
 
     # Обработка формы настроек профиля
     if request.method == 'POST' and tab == 'settings':
@@ -268,6 +270,7 @@ def profile_view(request):
 
     return render(request, 'main/profile.html', context)
 
+    
 
 #отмена записи
 @csrf_exempt
