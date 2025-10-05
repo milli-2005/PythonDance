@@ -231,6 +231,9 @@ def profile_view(request):
         return HttpResponseForbidden()
 
     tab = request.GET.get('tab', 'bookings')
+    today = timezone.now().date()
+    now = timezone.now()
+
 
     # Активные записи - только будущие занятия (учитывая дату И время)
     from datetime import datetime, time
@@ -271,7 +274,27 @@ def profile_view(request):
     print(f"PROFILE: Активных: {len(active_bookings)}, В истории: {total_history}")
     print(f"STATS: Посещено: {attended_count}, Пропущено: {missed_count}, Отменено: {cancelled_count}")
 
-    # Обработка формы настроек профиля
+
+    history_list = []
+    for booking in history_bookings:
+        # Для истории используем дату из расписания или дату записи
+        upcoming_dates = booking.schedule.get_upcoming_dates(weeks=52)
+        class_date = booking.booking_date.date()
+
+        if upcoming_dates:
+            past_dates = [d for d in upcoming_dates if d <= today]
+            if past_dates:
+                class_date = max(past_dates)
+
+        history_list.append({
+            'booking': booking,
+            'class_date': class_date,
+            'schedule': booking.schedule
+        })
+
+    history_list.sort(key=lambda x: x['class_date'], reverse=True)
+
+    # Обработка формы настроек
     if request.method == 'POST' and tab == 'settings':
         user = request.user
         user.first_name = request.POST.get('first_name', user.first_name)
@@ -298,6 +321,7 @@ def profile_view(request):
     }
 
     return render(request, 'main/profile.html', context)
+
 
 
 

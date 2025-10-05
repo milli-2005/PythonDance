@@ -30,9 +30,10 @@
                 <h3>Мои предстоящие занятия</h3>
                 {% if active_bookings %}
                 <div class="bookings-table">
-                    {% for booking in active_bookings %}
+                    {% for item in active_bookings %}
                     <div class="booking-item">
                         <div class="booking-date">
+<<<<<<< HEAD
                             <!-- ИСПОЛЬЗУЕМ class_date вместо schedule.start_date -->
                             <strong>{{ booking.class_date|date:"d.m.Y" }}</strong>
                             <div class="day-name">
@@ -45,26 +46,41 @@
                                 {% elif booking.class_date.weekday == 6 %}Воскресенье
                                 {% endif %}
                             </div>
+=======
+                            <strong>{{ item.class_date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">{{ item.schedule.get_day_of_week_display }}</div>
+                            {% if item.class_date == today %}
+                            <div class="today-badge-small">Сегодня</div>
+                            {% endif %}
+>>>>>>> 1d0217181188c12af7bee066f853a998195efdb2
                         </div>
                         <div class="booking-time">
-                            {{ booking.schedule.start_time }} - {{ booking.schedule.end_time }}
+                            {{ item.schedule.start_time }} - {{ item.schedule.end_time }}
                         </div>
                         <div class="booking-style">
-                            <strong>{{ booking.schedule.dance_style.name }}</strong>
+                            <strong>{{ item.schedule.dance_style.name }}</strong>
                         </div>
                         <div class="booking-trainer">
-                            <i class="fas fa-user"></i> {{ booking.schedule.trainer.user.get_full_name }}
+                            <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
                         </div>
                         <div class="booking-status">
                             <span class="status-badge booked">Записан</span>
                         </div>
                         <div class="booking-actions">
+<<<<<<< HEAD
     {% if booking.status == 'missed' %}
         <button class="btn btn-outline btn-sm" onclick="markAsAttended({{ booking.id }})">
             Отметить как посещенное
         </button>
     {% endif %}
 </div>
+=======
+                            <button class="btn btn-outline"
+                                    onclick="cancelBooking({{ item.booking.id }}, this)">
+                                Отменить запись
+                            </button>
+                        </div>
+>>>>>>> 1d0217181188c12af7bee066f853a998195efdb2
                     </div>
                     {% endfor %}
                 </div>
@@ -88,14 +104,15 @@
                 <h3>История моих занятий</h3>
                 {% if history_bookings %}
                 <div class="bookings-table">
-                    {% for booking in history_bookings %}
+                    {% for item in history_bookings %}
                     <div class="booking-item history-item">
                         <div class="booking-date">
-                            <strong>{{ booking.booking_date|date:"d.m.Y" }}</strong>
-                            <div class="day-name">Запись создана</div>
+                            <strong>{{ item.class_date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">Дата занятия</div>
                         </div>
                         <div class="booking-info">
                             <div class="booking-datetime">
+<<<<<<< HEAD
                                 {% if booking.class_date %}
                                     {{ booking.class_date|date:"d.m.Y" }}
                                 {% else %}
@@ -105,17 +122,20 @@
                             </div>
                             <div class="booking-style">
                                 {{ booking.schedule.dance_style.name }}
+=======
+                                {{ item.schedule.start_time }} • {{ item.schedule.dance_style.name }}
+>>>>>>> 1d0217181188c12af7bee066f853a998195efdb2
                             </div>
                             <div class="booking-trainer">
-                                <i class="fas fa-user"></i> {{ booking.schedule.trainer.user.get_full_name }}
+                                <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
                             </div>
                         </div>
                         <div class="booking-status">
-                            {% if booking.status == 'attended' %}
+                            {% if item.booking.status == 'attended' %}
                                 <span class="status-badge attended">Посещено</span>
-                            {% elif booking.status == 'missed' %}
+                            {% elif item.booking.status == 'missed' %}
                                 <span class="status-badge missed">Не пришел</span>
-                            {% elif booking.status == 'cancelled' %}
+                            {% elif item.booking.status == 'cancelled' %}
                                 <span class="status-badge cancelled">Отменено</span>
                             {% endif %}
                         </div>
@@ -148,6 +168,7 @@
 
 
                 
+
                 {% else %}
                 <div class="text-center" style="padding: 3rem;">
                     <i class="fas fa-clipboard-list fa-4x" style="color: var(--accent-secondary); margin-bottom: 1rem;"></i>
@@ -270,6 +291,16 @@
     font-size: 0.8rem;
     color: var(--text-secondary);
     margin-top: 0.2rem;
+}
+
+.today-badge-small {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-top: 0.3rem;
+    display: inline-block;
 }
 
 .booking-info {
@@ -553,6 +584,7 @@ function markAsAttended(bookingId) {
         }
     });
 }
+
 
 // Функция для получения CSRF токена
 function getCSRFToken() {
