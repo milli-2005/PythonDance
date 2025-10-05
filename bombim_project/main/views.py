@@ -232,21 +232,44 @@ def profile_view(request):
 
     tab = request.GET.get('tab', 'bookings')
 
-    # Активные записи - ВСЕ записи со статусом 'booked'
-    active_bookings = Booking.objects.filter(
+    # Активные записи - только будущие занятия (учитывая дату И время)
+    from datetime import datetime, time
+    now = datetime.now()
+    
+    active_bookings = []
+    all_bookings = Booking.objects.filter(
         client=request.user,
         status='booked'
     ).select_related('schedule', 'schedule__dance_style', 'schedule__trainer', 'schedule__trainer__user').order_by(
         'class_date', 'schedule__start_time')
 
-    # История посещений - записи с другими статусами
+    # Фильтруем в Python чтобы учесть время
+    for booking in all_bookings:
+        # Создаем datetime объекта занятия
+        class_datetime = datetime.combine(booking.class_date, booking.schedule.start_time)
+        
+        # Если занятие еще не началось - оно активное
+        if class_datetime > now:
+            active_bookings.append(booking)
+        else:
+            # Занятие уже прошло - меняем статус
+            booking.status = 'missed'
+            booking.save()
+
+    # История - все записи кроме активных
     history_bookings = Booking.objects.filter(
         client=request.user
     ).exclude(status='booked').select_related('schedule', 'schedule__dance_style', 'schedule__trainer',
                                               'schedule__trainer__user').order_by('-class_date')
 
-    # Отладочная информация
-    print(f"PROFILE DEBUG: User {request.user.id}, Active bookings: {active_bookings.count()}, History bookings: {history_bookings.count()}")
+    # РАСЧЕТ СТАТИСТИКИ
+    total_history = history_bookings.count()
+    attended_count = history_bookings.filter(status='attended').count()
+    missed_count = history_bookings.filter(status='missed').count()
+    cancelled_count = history_bookings.filter(status='cancelled').count()
+
+    print(f"PROFILE: Активных: {len(active_bookings)}, В истории: {total_history}")
+    print(f"STATS: Посещено: {attended_count}, Пропущено: {missed_count}, Отменено: {cancelled_count}")
 
     # Обработка формы настроек профиля
     if request.method == 'POST' and tab == 'settings':
@@ -265,12 +288,18 @@ def profile_view(request):
     context = {
         'tab': tab,
         'active_bookings': active_bookings,
-        'history_bookings': history_bookings
+        'history_bookings': history_bookings,
+        'stats': {
+            'total': total_history,
+            'attended': attended_count,
+            'missed': missed_count,
+            'cancelled': cancelled_count
+        }
     }
 
     return render(request, 'main/profile.html', context)
 
-    
+
 
 #отмена записи
 @csrf_exempt
