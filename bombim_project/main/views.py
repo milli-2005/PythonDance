@@ -37,14 +37,26 @@ def book_class(request, schedule_id):
             print(f"❌ Already booked: {existing_booking}")
             return JsonResponse({'success': False, 'error': 'Вы уже записаны на это занятие'})
 
+        # Вычисляем дату занятия
+        from datetime import datetime, timedelta
+        today = datetime.now().date()
+        
+        # Находим дату занятия на основе дня недели
+        days_ahead = schedule.day_of_week - today.weekday()
+        if days_ahead < 0:
+            days_ahead += 7
+        class_date = today + timedelta(days=days_ahead)
+
         # Создаем запись
         print("Creating booking...")
         booking = Booking.objects.create(
             client=request.user,
             schedule=schedule,
-            status='booked'
+            status='booked',
+            class_date=class_date  # ДОБАВЛЯЕМ дату занятия
         )
         print(f"✅ Booking created successfully: {booking.id}")
+        print(f"✅ Class date: {class_date}")
 
         return JsonResponse({'success': True, 'message': 'Запись успешно оформлена'})
 
@@ -89,15 +101,11 @@ def schedule_view(request):
     week_offset = int(request.GET.get('week', 0))
     date_filter = request.GET.get('date')
 
-    # Если выбрана конкретная дата, вычисляем неделю для этой даты
+    # Если выбрана конкретная дата, НЕ вычисляем неделю автоматически
     selected_date = None
     if date_filter:
         try:
             selected_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
-            # Вычисляем смещение недели для выбранной даты
-            today_week_start = today - timedelta(days=today.weekday())
-            selected_week_start = selected_date - timedelta(days=selected_date.weekday())
-            week_offset = (selected_week_start - today_week_start).days // 7
         except ValueError:
             selected_date = None
             date_filter = None
@@ -158,6 +166,12 @@ def schedule_view(request):
             status='booked'
         ).values_list('schedule_id', flat=True))
 
+    # Отладочная информация
+    print(f"DEBUG: week_offset={week_offset}, prev_week={week_offset-1}, next_week={week_offset+1}")
+    print(f"DEBUG: current_week_start={current_week_start}")
+    print(f"DEBUG: selected_date={selected_date}")
+    print(f"DEBUG: GET params: {dict(request.GET)}")
+
     return render(request, 'main/schedule.html', {
         'schedule_data': schedule_data,
         'dates': dates,
@@ -171,6 +185,7 @@ def schedule_view(request):
         'next_week': week_offset + 1,
         'selected_date': selected_date,
     })
+
 
 
 # Регистрация
@@ -220,9 +235,10 @@ def profile_view(request):
     # Активные записи (только будущие)
     active_bookings = Booking.objects.filter(
         client=request.user,
-        status='booked'
+        status='booked',
+        class_date__gte=timezone.now().date()  # только будущие занятия
     ).select_related('schedule', 'schedule__dance_style', 'schedule__trainer', 'schedule__trainer__user').order_by(
-        'schedule__start_date', 'schedule__start_time')
+        'class_date', 'schedule__start_time')
 
     # История посещений (завершенные и отмененные занятия)
     history_bookings = Booking.objects.filter(
@@ -243,7 +259,6 @@ def profile_view(request):
             user.birth_date = birth_date
 
         user.save()
-        # Можно добавить сообщение об успехе
 
     context = {
         'tab': tab,
@@ -253,6 +268,8 @@ def profile_view(request):
 
     return render(request, 'main/profile.html', context)
 
+
+#отмена записи
 @csrf_exempt
 @login_required
 def cancel_booking(request, booking_id):

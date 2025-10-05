@@ -12,50 +12,68 @@
             <!-- Навигация по неделям -->
             <div class="week-navigation">
                 <div class="week-controls">
-                    <button class="btn btn-outline" onclick="navigateWeek(-1)">
+                    <!-- Предыдущая неделя -->
+                    <a href="?week={{ prev_week }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                       class="btn btn-outline">
                         <i class="fas fa-chevron-left"></i> Предыдущая неделя
-                    </button>
+                    </a>
 
                     <h3 class="week-title">
-                        Неделя: {{ current_week_start|date:"d M" }} - {{ dates.6|date:"d M Y" }}
-                        {% if week_offset == 0 %}
+                        {% if selected_date %}
+                            День: {{ selected_date|date:"d M Y" }}
+                        {% else %}
+                            Неделя: {{ current_week_start|date:"d M" }} - {{ dates.6|date:"d M Y" }}
+                        {% endif %}
+                        {% if week_offset == 0 and not selected_date %}
                             <span class="current-week-badge">Текущая неделя</span>
                         {% endif %}
                     </h3>
 
-                    <button class="btn btn-outline" onclick="navigateWeek(1)">
+                    <!-- Следующая неделя -->
+                    <a href="?week={{ next_week }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                       class="btn btn-outline">
                         Следующая неделя <i class="fas fa-chevron-right"></i>
-                    </button>
+                    </a>
                 </div>
 
                 <!-- Навигация по дням недели -->
                 <div class="days-grid">
                     {% for date in dates %}
-                    <button class="day-link {% if date == today %}today{% endif %} {% if selected_date == date %}active{% endif %}"
-                            onclick="selectDate('{{ date|date:"Y-m-d" }}')">
-                        <div class="day-name">{{ date|date:"D" }}</div>
+                    <a href="?week={{ week_offset }}&date={{ date|date:'Y-m-d' }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                       class="day-link {% if date == today %}today{% endif %} {% if selected_date == date %}active{% endif %}">
+                        <div class="day-name">
+                            {% if date.weekday == 0 %}Пн
+                            {% elif date.weekday == 1 %}Вт
+                            {% elif date.weekday == 2 %}Ср
+                            {% elif date.weekday == 3 %}Чт
+                            {% elif date.weekday == 4 %}Пт
+                            {% elif date.weekday == 5 %}Сб
+                            {% elif date.weekday == 6 %}Вс
+                            {% endif %}
+                        </div>
                         <div class="day-date">{{ date|date:"d.m" }}</div>
                         {% if date == today %}
                         <div class="today-badge">Сегодня</div>
                         {% endif %}
-                    </button>
+                    </a>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Фильтры -->
-            <form method="get" class="filter-form" onsubmit="event.preventDefault(); applyFilters();">
+            <form method="get" class="filter-form">
+                {% if not selected_date %}
                 <input type="hidden" name="week" value="{{ week_offset }}">
-                {% if selected_date %}
-                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
                 {% endif %}
+                
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <div>
                         <label class="form-label">Направление:</label>
-                        <select name="style" class="form-control">
+                        <select name="style" class="form-control" onchange="this.form.submit()">
                             <option value="">Все направления</option>
                             {% for style in styles %}
-                                <option value="{{ style.id }}" {% if request.GET.style == style.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ style.id }}" 
+                                    {% if request.GET.style == style.id|stringformat:"s" %}selected{% endif %}>
                                     {{ style.name }}
                                 </option>
                             {% endfor %}
@@ -63,25 +81,40 @@
                     </div>
                     <div>
                         <label class="form-label">Преподаватель:</label>
-                        <select name="trainer" class="form-control">
+                        <select name="trainer" class="form-control" onchange="this.form.submit()">
                             <option value="">Все преподаватели</option>
                             {% for trainer in trainers %}
-                                <option value="{{ trainer.id }}" {% if request.GET.trainer == trainer.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ trainer.id }}" 
+                                    {% if request.GET.trainer == trainer.id|stringformat:"s" %}selected{% endif %}>
                                     {{ trainer.user.get_full_name }}
                                 </option>
                             {% endfor %}
                         </select>
                     </div>
                 </div>
+                
                 <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button type="submit" class="btn btn-primary">Применить фильтры</button>
                     <a href="{% url 'schedule' %}" class="btn btn-outline">Сбросить всё</a>
                     {% if selected_date %}
-                    <button type="button" class="btn btn-outline" onclick="showFullWeek()">Показать всю неделю</button>
+                    <a href="?week={{ week_offset }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                       class="btn btn-outline">Показать всю неделю</a>
                     {% endif %}
+                    <a href="?week=0{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                       class="btn btn-outline">Текущая неделя</a>
                 </div>
             </form>
         </div>
+    </div>
+
+    <!-- Отладочная информация -->
+    <div style="background: #1a1a2e; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 12px; color: #b8b8d9;">
+        <strong>Отладка:</strong> 
+        week_offset={{ week_offset }}, 
+        prev_week={{ prev_week }}, 
+        next_week={{ next_week }}, 
+        selected_date={{ selected_date }},
+        current_week_start={{ current_week_start }}
     </div>
 
     <!-- Расписание -->
@@ -104,7 +137,16 @@
                 <div class="schedule-item {% if item.is_past %}past-class{% endif %} {% if item.is_today %}today-class{% endif %}">
                     <div class="schedule-date">
                         <strong>{{ item.date|date:"d.m.Y" }}</strong>
-                        <div class="day-name">{{ item.date|date:"l" }}</div>
+                        <div class="day-name">
+                            {% if item.date.weekday == 0 %}Понедельник
+                            {% elif item.date.weekday == 1 %}Вторник
+                            {% elif item.date.weekday == 2 %}Среда
+                            {% elif item.date.weekday == 3 %}Четверг
+                            {% elif item.date.weekday == 4 %}Пятница
+                            {% elif item.date.weekday == 5 %}Суббота
+                            {% elif item.date.weekday == 6 %}Воскресенье
+                            {% endif %}
+                        </div>
                         {% if item.is_today %}
                         <div class="today-badge-small">Сегодня</div>
                         {% endif %}
@@ -214,9 +256,6 @@
     background: var(--bg-secondary);
     transition: all 0.3s ease;
     position: relative;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
 }
 
 .day-link:hover {
@@ -361,100 +400,6 @@ function getCSRFToken() {
     return cookieValue;
 }
 
-// Функция для навигации по неделям
-function navigateWeek(offset) {
-    const urlParams = new URLSearchParams(window.location.search);
-    let currentWeek = parseInt(urlParams.get('week') || '0');
-    currentWeek += offset;
-
-    // Собираем все параметры
-    const params = new URLSearchParams();
-    params.set('week', currentWeek);
-
-    // Сохраняем фильтры
-    const style = urlParams.get('style');
-    const trainer = urlParams.get('trainer');
-    const date = urlParams.get('date');
-
-    if (style) params.set('style', style);
-    if (trainer) params.set('trainer', trainer);
-    if (date) params.set('date', date);
-
-    // Переходим на новый URL
-    window.location.href = `${window.location.pathname}?${params.toString()}`;
-}
-
-// Функция для выбора даты
-function selectDate(dateString) {
-    const urlParams = new URLSearchParams(window.location.search);
-
-    // Собираем все параметры
-    const params = new URLSearchParams();
-
-    // Сохраняем неделю и добавляем дату
-    const week = urlParams.get('week') || '0';
-    const style = urlParams.get('style');
-    const trainer = urlParams.get('trainer');
-
-    params.set('week', week);
-    params.set('date', dateString);
-
-    if (style) params.set('style', style);
-    if (trainer) params.set('trainer', trainer);
-
-    // Переходим на новый URL
-    window.location.href = `${window.location.pathname}?${params.toString()}`;
-}
-
-// Функция для применения фильтров
-function applyFilters() {
-    const form = document.querySelector('.filter-form');
-    const urlParams = new URLSearchParams(window.location.search);
-
-    // Сохраняем текущие неделю и дату
-    const week = urlParams.get('week') || '0';
-    const date = urlParams.get('date');
-
-    // Добавляем скрытые поля если их нет
-    let weekInput = form.querySelector('input[name="week"]');
-    if (!weekInput) {
-        weekInput = document.createElement('input');
-        weekInput.type = 'hidden';
-        weekInput.name = 'week';
-        form.appendChild(weekInput);
-    }
-    weekInput.value = week;
-
-    let dateInput = form.querySelector('input[name="date"]');
-    if (date && !dateInput) {
-        dateInput = document.createElement('input');
-        dateInput.type = 'hidden';
-        dateInput.name = 'date';
-        form.appendChild(dateInput);
-        dateInput.value = date;
-    }
-
-    form.submit();
-}
-
-// Функция для показа всей недели
-function showFullWeek() {
-    const urlParams = new URLSearchParams(window.location.search);
-
-    // Собираем параметры без даты
-    const params = new URLSearchParams();
-
-    const week = urlParams.get('week') || '0';
-    const style = urlParams.get('style');
-    const trainer = urlParams.get('trainer');
-
-    params.set('week', week);
-    if (style) params.set('style', style);
-    if (trainer) params.set('trainer', trainer);
-
-    window.location.href = `${window.location.pathname}?${params.toString()}`;
-}
-
 // Функция для записи на занятие
 function bookClass(scheduleId, button) {
     if (!confirm('Записаться на это занятие?')) {
@@ -515,83 +460,6 @@ function updateBookingUI(scheduleId, isBooked) {
             button.onclick = null;
         }
     });
-}
-
-// Функция для отмены записи
-function cancelBooking(bookingId, button) {
-    if (!confirm('Вы уверены, что хотите отменить запись?')) {
-        return;
-    }
-
-    const originalText = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отменяем...';
-
-    const csrfToken = getCSRFToken();
-
-    if (!csrfToken) {
-        alert('Ошибка безопасности. Пожалуйста, обновите страницу.');
-        button.disabled = false;
-        button.innerHTML = originalText;
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('csrfmiddlewaretoken', csrfToken);
-
-    fetch(`/cancel-booking/${bookingId}/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken,
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const bookingElement = button.closest('.schedule-item');
-            if (bookingElement) {
-                bookingElement.style.transition = 'all 0.3s ease';
-                bookingElement.style.opacity = '0';
-                bookingElement.style.height = '0';
-                bookingElement.style.margin = '0';
-                bookingElement.style.padding = '0';
-                bookingElement.style.overflow = 'hidden';
-
-                setTimeout(() => {
-                    bookingElement.remove();
-                    checkEmptyBookings();
-                }, 300);
-            }
-            alert('✅ ' + data.message);
-        } else {
-            alert('❌ ' + data.error);
-            button.disabled = false;
-            button.innerHTML = originalText;
-        }
-    })
-    .catch(error => {
-        console.error('Cancel error:', error);
-        alert('Ошибка сети: ' + error.message);
-        button.disabled = false;
-        button.innerHTML = originalText;
-    });
-}
-
-function checkEmptyBookings() {
-    const items = document.querySelectorAll('.schedule-item');
-    const container = document.querySelector('.schedule-table');
-
-    if (items.length === 0 && container) {
-        container.innerHTML = `
-            <div class="text-center" style="padding: 3rem;">
-                <i class="fas fa-calendar-plus fa-4x" style="color: var(--accent-primary); margin-bottom: 1rem;"></i>
-                <h4>Нет активных записей</h4>
-                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Запишитесь на занятие в расписании</p>
-                <a href="/schedule/" class="btn btn-primary">Перейти к расписанию</a>
-            </div>
-        `;
-    }
 }
 </script>
 {% endblock %}

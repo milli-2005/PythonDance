@@ -33,8 +33,18 @@
                     {% for booking in active_bookings %}
                     <div class="booking-item">
                         <div class="booking-date">
-                            <strong>{{ booking.schedule.start_date|date:"d.m.Y" }}</strong>
-                            <div class="day-name">{{ booking.schedule.get_day_of_week_display }}</div>
+                            <!-- ИСПОЛЬЗУЕМ class_date вместо schedule.start_date -->
+                            <strong>{{ booking.class_date|date:"d.m.Y" }}</strong>
+                            <div class="day-name">
+                                {% if booking.class_date.weekday == 0 %}Понедельник
+                                {% elif booking.class_date.weekday == 1 %}Вторник
+                                {% elif booking.class_date.weekday == 2 %}Среда
+                                {% elif booking.class_date.weekday == 3 %}Четверг
+                                {% elif booking.class_date.weekday == 4 %}Пятница
+                                {% elif booking.class_date.weekday == 5 %}Суббота
+                                {% elif booking.class_date.weekday == 6 %}Воскресенье
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="booking-time">
                             {{ booking.schedule.start_time }} - {{ booking.schedule.end_time }}
@@ -85,7 +95,12 @@
                         </div>
                         <div class="booking-info">
                             <div class="booking-datetime">
-                                {{ booking.schedule.start_date|date:"d.m.Y" }} • {{ booking.schedule.start_time }}
+                                {% if booking.class_date %}
+                                    {{ booking.class_date|date:"d.m.Y" }}
+                                {% else %}
+                                    {{ booking.booking_date|date:"d.m.Y" }}
+                                {% endif %}
+                                • {{ booking.schedule.start_time }}
                             </div>
                             <div class="booking-style">
                                 {{ booking.schedule.dance_style.name }}
@@ -517,7 +532,7 @@ function checkEmptyBookings() {
     }
 }
 
-// Функция для получения CSRF токена (должна быть в base.html или здесь)
+// Функция для получения CSRF токена
 function getCSRFToken() {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {

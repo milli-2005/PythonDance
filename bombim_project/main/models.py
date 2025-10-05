@@ -134,9 +134,26 @@ class Booking(models.Model):
     schedule = models.ForeignKey(Schedule, on_delete=models.CASCADE, related_name='bookings')
     booking_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='booked')
+    # ДОБАВИТЬ это поле
+    class_date = models.DateField(null=True, blank=True, help_text="Фактическая дата занятия")
 
     class Meta:
         unique_together = ['client', 'schedule']
+
+    def save(self, *args, **kwargs):
+        # Автоматически определяем дату занятия при создании
+        if not self.class_date and self.schedule:
+            # Вычисляем ближайшую дату занятия для этого расписания
+            from datetime import datetime, timedelta
+            today = datetime.now().date()
+            
+            # Находим дату занятия на основе дня недели
+            days_ahead = self.schedule.day_of_week - today.weekday()
+            if days_ahead < 0:
+                days_ahead += 7
+            self.class_date = today + timedelta(days=days_ahead)
+            
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.client} - {self.schedule}"
