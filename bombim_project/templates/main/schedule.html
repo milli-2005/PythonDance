@@ -13,7 +13,7 @@
             <div class="week-navigation">
                 <div class="week-controls">
                     <!-- Предыдущая неделя -->
-                    <a href="?week={{ prev_week }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                    <a href="?week={{ prev_week }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}{% if show_past %}&show_past=true{% endif %}" 
                        class="btn btn-outline">
                         <i class="fas fa-chevron-left"></i> Предыдущая неделя
                     </a>
@@ -30,7 +30,7 @@
                     </h3>
 
                     <!-- Следующая неделя -->
-                    <a href="?week={{ next_week }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                    <a href="?week={{ next_week }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}{% if show_past %}&show_past=true{% endif %}" 
                        class="btn btn-outline">
                         Следующая неделя <i class="fas fa-chevron-right"></i>
                     </a>
@@ -39,7 +39,7 @@
                 <!-- Навигация по дням недели -->
                 <div class="days-grid">
                     {% for date in dates %}
-                    <a href="?week={{ week_offset }}&date={{ date|date:'Y-m-d' }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                    <a href="?week={{ week_offset }}&date={{ date|date:'Y-m-d' }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}{% if show_past %}&show_past=true{% endif %}" 
                        class="day-link {% if date == today %}today{% endif %} {% if selected_date == date %}active{% endif %}">
                         <div class="day-name">
                             {% if date.weekday == 0 %}Пн
@@ -93,28 +93,41 @@
                     </div>
                 </div>
                 
+                <!-- Переключатель показа прошедших занятий -->
+                <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <a href="?week={{ week_offset }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}&show_past={% if show_past %}false{% else %}true{% endif %}" 
+                           class="btn {% if show_past %}btn-primary{% else %}btn-outline{% endif %}">
+                            <i class="fas fa-history"></i> 
+                            {% if show_past %}
+                                Скрыть прошедшие
+                            {% else %}
+                                Показать прошедшие
+                            {% endif %}
+                        </a>
+                    </div>
+                    
+                    <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                        {% if show_past %}
+                            <i class="fas fa-info-circle"></i> Показаны все занятия, включая прошедшие
+                        {% else %}
+                            <i class="fas fa-info-circle"></i> Показаны только будущие занятия
+                        {% endif %}
+                    </div>
+                </div>
+                
                 <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button type="submit" class="btn btn-primary">Применить фильтры</button>
                     <a href="{% url 'schedule' %}" class="btn btn-outline">Сбросить всё</a>
                     {% if selected_date %}
-                    <a href="?week={{ week_offset }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                    <a href="?week={{ week_offset }}{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}{% if show_past %}&show_past=true{% endif %}" 
                        class="btn btn-outline">Показать всю неделю</a>
                     {% endif %}
-                    <a href="?week=0{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}" 
+                    <a href="?week=0{% if request.GET.style %}&style={{ request.GET.style }}{% endif %}{% if request.GET.trainer %}&trainer={{ request.GET.trainer }}{% endif %}{% if show_past %}&show_past=true{% endif %}" 
                        class="btn btn-outline">Текущая неделя</a>
                 </div>
             </form>
         </div>
-    </div>
-
-    <!-- Отладочная информация -->
-    <div style="background: #1a1a2e; padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 12px; color: #b8b8d9;">
-        <strong>Отладка:</strong> 
-        week_offset={{ week_offset }}, 
-        prev_week={{ prev_week }}, 
-        next_week={{ next_week }}, 
-        selected_date={{ selected_date }},
-        current_week_start={{ current_week_start }}
     </div>
 
     <!-- Расписание -->
@@ -150,6 +163,9 @@
                         {% if item.is_today %}
                         <div class="today-badge-small">Сегодня</div>
                         {% endif %}
+                        {% if item.is_past %}
+                        <div class="past-badge">Прошедшее</div>
+                        {% endif %}
                     </div>
                     <div class="schedule-time">
                         {{ item.schedule.start_time }} - {{ item.schedule.end_time }}
@@ -160,6 +176,11 @@
                     <div class="schedule-trainer">
                         <i class="fas fa-user"></i> {{ item.schedule.trainer.user.get_full_name }}
                     </div>
+                    <div class="schedule-participants">
+                        <small style="color: var(--text-secondary);">
+                            {{ item.schedule.current_participants }}/{{ item.schedule.max_participants }} записей
+                        </small>
+                    </div>
                     <div class="schedule-action">
                         {% if user.is_authenticated and user.role == 'client' %}
                             {% if item.schedule.id in user_bookings %}
@@ -169,6 +190,10 @@
                             {% elif item.is_past %}
                                 <button class="btn btn-outline" disabled>
                                     <i class="fas fa-clock"></i> Прошло
+                                </button>
+                            {% elif item.schedule.is_full %}
+                                <button class="btn btn-outline" disabled>
+                                    <i class="fas fa-users"></i> Мест нет
                                 </button>
                             {% else %}
                                 <button class="btn btn-primary"
@@ -306,13 +331,23 @@
     display: inline-block;
 }
 
+.past-badge {
+    background: var(--text-secondary);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-top: 0.3rem;
+    display: inline-block;
+}
+
 .schedule-table {
     margin-top: 1rem;
 }
 
 .schedule-item {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr auto;
+    grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr 0.8fr auto;
     gap: 1rem;
     padding: 1rem;
     border-bottom: 1px solid var(--bg-secondary);
@@ -325,7 +360,7 @@
 }
 
 .schedule-item.past-class {
-    opacity: 0.6;
+    opacity: 0.7;
     background: rgba(255, 255, 255, 0.05);
 }
 
@@ -353,6 +388,20 @@
 .btn-success:hover {
     background: #00b386;
     color: white;
+}
+
+@media (max-width: 1024px) {
+    .schedule-item {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .schedule-participants,
+    .schedule-action {
+        grid-column: 1 / -1;
+        text-align: center;
+        margin-top: 1rem;
+    }
 }
 
 @media (max-width: 768px) {

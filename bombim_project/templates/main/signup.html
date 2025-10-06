@@ -178,44 +178,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('signup-form');
     const submitBtn = document.getElementById('submit-btn');
-    
-// Валидация телефона в реальном времени
-const phoneInput = document.querySelector('input[name="phone"]');
-if (phoneInput) {
-    phoneInput.addEventListener('input', function(e) {
-        let value = e.target.value;
-        
-        // Разрешаем любые символы, но подсвечиваем только цифры и +
-        let cleanValue = value.replace(/[^\d+]/g, '');
-        
-        // Автоматически добавляем +7 если начинается с 7 или 8
-        if (cleanValue.startsWith('7') && !cleanValue.startsWith('+7')) {
-            cleanValue = '+' + cleanValue;
-        } else if (cleanValue.startsWith('8') && cleanValue.length === 1) {
-            cleanValue = '+7';
-        }
-        
-        // Ограничиваем длину
-        if (cleanValue.length > 12) {
-            cleanValue = cleanValue.substring(0, 12);
-        }
-        
-        e.target.value = cleanValue;
-    });
-    
-    // Показываем пример при фокусе
-    phoneInput.addEventListener('focus', function() {
-        if (!this.value) {
-            this.placeholder = 'Например: +79991234567';
-        }
-    });
-    
-    phoneInput.addEventListener('blur', function() {
-        this.placeholder = '';
-    });
-}
 
-
+    
     // Валидация пароля в реальном времени
     const passwordInput = document.querySelector('input[name="password1"]');
     if (passwordInput) {
